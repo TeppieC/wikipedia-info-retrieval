@@ -10,5 +10,6 @@ SELECT ?team ?stadium ?capacity WHERE {
   	?team dct:subject dbc:Football_clubs_in_Italy .
   	?stadium rdf:type dbo:Stadium .
   	?team dbo:ground ?stadium .
-  	?team dbo:capacity ?capacity
+  	OPTIONAL
+  	{?team dbo:capacity ?capacity}
 }
