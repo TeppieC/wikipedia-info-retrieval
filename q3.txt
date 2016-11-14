@@ -1,0 +1,17 @@
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX dbc: <http://dbpedia.org/resource/Category:>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX dbp: <http://dbpedia.org/property/>
+PREFIX dbr: <http://dbpedia.org/resource/>
+SELECT ?player WHERE {
+	?club dct:subject dbc:La_Liga_clubs.
+  ?club dct:subject dbc:Unrelegated_association_football_clubs .
+  ?player dbp:clubs ?club.
+  ?player dbo:birthPlace ?country.
+  ?country dct:subject dbc:Member_states_of_the_Union_of_South_American_Nations
+}
+GROUP BY ?country
+
+56 entries???
