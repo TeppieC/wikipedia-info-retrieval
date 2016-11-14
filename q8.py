@@ -34,33 +34,35 @@ def splitBySemicolon(data):
 	
 	for i in range(1, len(tripleList)):
 		#insert the subject to make these become valid triple
-		tripleList[i] = subject + ' ' + tripleList[i]
+		tripleList[i] = subject + tripleList[i]
 
 	return tripleList
 
 def splitByComma(triple):
 	statements = []
 
+	print(triple)
 	nodes = triple.strip(' ').split(' ')
-
+	print(nodes)
 	# validate the triple data
 	if not len(nodes)==3:
 		print('Invalid triple data', triple)
 		sys.exit()
-	subject = nodess[0]
+	subject = nodes[0]
 	predicate = nodes[1]
 	objects = nodes[2].split(',') # a list of all objects
 
 	for obj in objects:
 		if obj[-3]=='@': # won't deal with languages other than English
 			continue
-		statements.append(subject+' '+predicate+' '+obj)
+		statements.append([subject,predicate,obj])
 
 	return statements
 
 
 def main(dataList):
 	prefixList = {}
+	statements = []
 	for data in dataList:
 		if data[0]=='@': # store the prefix or base directives
 			if not isValidPrefix(data): # check for validity
@@ -72,11 +74,14 @@ def main(dataList):
 			tripleList = splitBySemicolon(data)
 			#print(tripleList)
 			for triple in tripleList:
-				statements = splitByComma(triple)
+				statements += splitByComma(triple)
 
 	for prefix,value in prefixList.items():
 		print(prefix)
 		print(value)
+
+	for statement in statements:
+		print(statement)
 '''
 dbr:Edmonton	rdfs:label	"Edmonton"@it ,
 		"Edmonton"@en ,
@@ -153,12 +158,12 @@ if __name__ == '__main__':
 	# replace the extra spaces remaining in the dataString
 	dataString = dataString.replace(SEMICOLON_DELIMATOR, ";")
 	dataString = dataString.replace(COMMA_DELIMATOR, ",")
-	print(dataString)
+	#print(dataString)
 	# extract each triple/prefix from the dataString, and store them into a list
 	# each element of dataList is a prefix or a triple, 
 	# the last element should be discard because it's empty
 	dataList = dataString.split(PERIOD_DELIMATOR)[:-1] 
-	print(dataList)
+	#print(dataList)
 	
 	main(dataList)
 
