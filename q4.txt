@@ -6,8 +6,12 @@ PREFIX dbp: <http://dbpedia.org/property/>
 PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX dbo: <http://dbpedia.org/ontology/>
 PREFIX db: <http://dbpedia.org/>
-SELECT ?team (COUNT(?final)AS ?times) WHERE {
-  ?final dct:subject dbc:FIFA_World_Cup_finals.
-  ?final dbp:team ?team.
-  #FILTER(?times > 3)
+SELECT * WHERE {
+  {
+  	SELECT ?team (COUNT(?final)AS ?times) WHERE {
+  		?final dct:subject dbc:FIFA_World_Cup_finals.
+  		?final dbp:team ?team
+  	}
+  }.
+	FILTER(?times > 3)
 } 
