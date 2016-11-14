@@ -41,22 +41,53 @@ def splitBySemicolon(data):
 def splitByComma(triple):
 	statements = []
 
-	print(triple)
+	#print(triple)
 	nodes = triple.strip(' ').split(' ')
-	print(nodes)
+	#print(nodes)
 	# validate the triple data
-	if not len(nodes)==3:
-		print('Invalid triple data', triple)
-		sys.exit()
+	while not len(nodes)==3:
+		# special case for triple such as 'dbr:Edmonton dbp:leaderTitle "Governing body"@en'
+		# the resulting nodes list for this triple will be in length 4, 
+		# because space existed in the object as a literal string
+		# to fix this issue:
+		# 1. check if this length(>3) is resulting by spliting the spaces in literal strings
+		# note that only literal strings can have spaces in themselves
+		for i in range(2, len(nodes)):
+			# for all possible extra nodes:
+			if nodes[i].count('"')%2==1:
+				#print("triggered")
+				# if there is an odd number of " quotes in the node, 
+				# eg:  '"Manager"@en，"Governing' has 3 '"''s
+				# eg: 'body"@en，dbr:Legislative_Assembly_of_Alberta，dbr:List_of_House_members_of_the_42nd_Parliament_of_Canada，"Mayor"@en' also has 3
+				nodes[i]+=" "
+				nodes[i]+=nodes[i+1]
+				nodes.remove(nodes[i+1])
+				break
+			else:
+				# else, this is indeed an invalid triple				
+				print('Invalid triple data', triple)
+				sys.exit()
+
+	print(nodes)
 	subject = nodes[0]
 	predicate = nodes[1]
-	objects = nodes[2].split(',') # a list of all objects
+	objects = nodes[2].split('，') # a list of all objects
 
 	for obj in objects:
-		if obj[-3]=='@': # won't deal with languages other than English
-			continue
-		statements.append([subject,predicate,obj])
+		try: 
+			if obj[-3:]=='@en': # deal with the language tag with @en at the end	
+				statements.append([subject,predicate,obj[:-3]])
+				continue
+			elif obj[-3]=='@': # won't deal with languages other than English	
+				continue
+		except IndexError: # in case that some objects will have shorter length, eg: 11
+			pass
 
+		statements.append([subject,predicate,obj]) # deal with the other(common) cases
+		#print("new statements appended: ", [subject,predicate,obj])
+
+	print("new statements:", statements)
+	print(" ")
 	return statements
 
 
@@ -157,7 +188,7 @@ if __name__ == '__main__':
 
 	# replace the extra spaces remaining in the dataString
 	dataString = dataString.replace(SEMICOLON_DELIMATOR, ";")
-	dataString = dataString.replace(COMMA_DELIMATOR, ",")
+	dataString = dataString.replace(COMMA_DELIMATOR, "，")
 	#print(dataString)
 	# extract each triple/prefix from the dataString, and store them into a list
 	# each element of dataList is a prefix or a triple, 

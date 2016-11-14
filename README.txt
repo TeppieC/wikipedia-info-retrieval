@@ -8,7 +8,11 @@ For q6,7,8:
 	Do we assume that prefixes can be repeated? overriden throughout the file? 
 	How do I know which type is the value, from the file? eg. if is int for population
 		How to distinguish those types??? --> w/o quotes?
+		** What do you mean by handling the types?
+			To store them in their corresponding type in sqlite? or store which type they belong to and store themselves just as strings?
 	Do we assume that all delimator/seperator is fixed? eg: ' ,   '
+
+	A naive approach will get marks deducted?
 
 	Everything need to be stored:
 		every node, along with its prefix and data type
