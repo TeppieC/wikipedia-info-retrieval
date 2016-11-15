@@ -1,0 +1,24 @@
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX schema: <http://schema.org/>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX dbr: <http://dbpedia.org/resource/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX schema: <http://schema.org/>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX dbr: <http://dbpedia.org/resource/>
+
+SELECT ?city ?population ?cnt (?ratio as ?rat) WHERE {    
+{
+	SELECT ?city ?population (COUNT(?hospital) as ?cnt) WHERE {
+  		?city dbo:populationTotal ?population .
+  		?city rdf:type schema:City .
+  		?city dbo:isPartOf dbr:Alberta .
+  		?hospital dbo:region ?city .
+      	?hospital rdf:type schema:Hospital
+    	}
+	}.
+    bind (?population/?cnt AS ?ratio)
+}
+ORDER BY DESC(?rat)
