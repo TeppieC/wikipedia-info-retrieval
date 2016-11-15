@@ -9,7 +9,7 @@ PREFIX schema: <http://schema.org/>
 PREFIX dbo: <http://dbpedia.org/ontology/>
 PREFIX dbr: <http://dbpedia.org/resource/>
 
-SELECT ?city ?population ?cnt (?ratio as ?rat) WHERE {    
+SELECT ?city (?ratio as ?rat) WHERE {    
 {
 	SELECT ?city ?population (COUNT(?hospital) as ?cnt) WHERE {
   		?city dbo:populationTotal ?population .
