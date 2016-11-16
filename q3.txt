@@ -5,13 +5,15 @@ PREFIX dbc: <http://dbpedia.org/resource/Category:>
 PREFIX dbo: <http://dbpedia.org/ontology/>
 PREFIX dbp: <http://dbpedia.org/property/>
 PREFIX dbr: <http://dbpedia.org/resource/>
-SELECT ?player WHERE {
-	?club dct:subject dbc:La_Liga_clubs.
+PREFIX db: <http://dbpedia.org/>
+SELECT ?country (COUNT(?player) AS ?count)  WHERE {
+  ?club rdf:type dbo:SoccerClub.
+  ?club dbp:league dbr:La_Liga.
   ?club dct:subject dbc:Unrelegated_association_football_clubs .
+  ?player rdf:type dbo:SoccerPlayer.
   ?player dbp:clubs ?club.
-  ?player dbo:birthPlace ?country.
-  ?country dct:subject dbc:Member_states_of_the_Union_of_South_American_Nations
+  ?player dbo:birthPlace ?birthplace.
+  ?birthplace dbo:country ?country.
+  ?country dct:subject dbc:Countries_in_South_America
 }
 GROUP BY ?country
-
-56 entries???
