@@ -23,7 +23,6 @@ def isValidPrefix(string):
 	return True
 
 def isValidTriple(string):
-	#根据;分完以后，再根据空格分割，第一个必须有三部分，之后的必须至少两部分
 	pass
 
 def splitBySemicolon(data):
@@ -68,11 +67,15 @@ def splitByComma(triple):
 				print('Invalid triple data', triple)
 				sys.exit()
 
-	print(nodes)
+	#print(nodes)
+	# extract all three nodes of one triple data
 	subject = nodes[0]
 	predicate = nodes[1]
-	objects = nodes[2].split('，') # a list of all objects
+	objects = nodes[2].split('，') # a list of all objects (used to be separated by commas)
+	#print("Objects are: ", objects)
 
+	# to construct all complete triple statements, 
+	#  by correspond each obj in the objects list to the subject&predicates
 	for obj in objects:
 		try: 
 			if obj[-3:]=='@en': # deal with the language tag with @en at the end	
@@ -81,14 +84,64 @@ def splitByComma(triple):
 			elif obj[-3]=='@': # won't deal with languages other than English	
 				continue
 		except IndexError: # in case that some objects will have shorter length, eg: 11
+			# those cases are common cases, without language tags, leave it to the next line
 			pass
 
-		statements.append([subject,predicate,obj]) # deal with the other(common) cases
+		statements.append([subject,predicate,obj]) # deal with the other(common) cases without language tags
 		#print("new statements appended: ", [subject,predicate,obj])
 
-	print("new statements:", statements)
-	print(" ")
+	#print("new statements:", statements)
+	#print(" ")
 	return statements
+
+
+def isfloat(value):
+	try:
+		float(value)
+		return True
+	except ValueError:
+		return False
+
+def isSpecialType(string):
+	'''
+	determine if the type of the literal is like "1904-10-08"^^xsd:date
+	'''
+	if "^^" in string:
+		return True
+	else:
+		return False
+
+def replacePrefix(prefixDict, statement):
+	outputStmt = []
+	for node in statement:
+		if(node[0]=='<' and node[-1]=='>'):
+			# for pure uri's
+			outputStmt.append(node)
+		elif node[0]=='"' and node[-1]=='"':
+			# for string literals
+			outputStmt.append(node)
+		elif node.isnumeric():
+			# for int, all int literals should be stored with double quotes??????
+			outputStmt.append('"'+node+'"')
+		elif isfloat(node):
+			# for float/decimal, all string literals should be stored with double quotes?????
+			outputStmt.append('"'+node+'"')
+		elif isSpecialType(node):
+			# for other literal types
+			# "1904-10-08"^^xsd:date --> "1904-10-08"
+			# "53.53333282470703125"^^xsd:float --> "53.53333282470703125"
+			# "812201"^^xsd:nonNegativeInteger --> "812201"
+			outputStmt.append(node[:node.index("^^")])
+		else:
+			# for prefixed nodes
+			nodeList = node.split(":")
+			prefix = ''
+			try:
+				prefix = prefixDict[nodeList[0]]
+			except KeyError: # for empty prefix/node
+				prefix = '<_/>'
+			outputStmt.append(prefix[:-1] + nodeList[1] + prefix[-1])
+	return outputStmt
 
 
 def main(dataList):
@@ -107,34 +160,19 @@ def main(dataList):
 			for triple in tripleList:
 				statements += splitByComma(triple)
 
+	'''
 	for prefix,value in prefixList.items():
 		print(prefix)
 		print(value)
-
+	'''
+	statementsNew = []
 	for statement in statements:
-		print(statement)
-'''
-dbr:Edmonton	rdfs:label	"Edmonton"@it ,
-		"Edmonton"@en ,
-		"Edmonton"@es ,
-		"Edmonton"@de ,
-		"\u0625\u062F\u0645\u0648\u0646\u062A\u0648\u0646"@ar ,
-		"Edmonton"@fr ,
-		"\u042D\u0434\u043C\u043E\u043D\u0442\u043E\u043D"@ru ,
-		"\u57C3\u5FB7\u8499\u987F"@zh ,
-		"Edmonton"@pl ,
-		"Edmonton"@pt ,
-		"Edmonton"@nl ,
-		"\u30A8\u30C9\u30E2\u30F3\u30C8\u30F3"@ja ;
-	rdfs:seeAlso	dbr:Economy_of_Alberta ,
-		dbr:The_Edmonton_Capital_Region ,
-		dbr:List_of_neighbourhoods ,
-		dbr:List_of_airports ,
-		dbr:Landmark ,
-		dbr:Edmonton ,
-		dbr:List_of_attractions ,
-		dbr:North_Saskatchewan_River_valley_parks_system .
-		'''
+		#print(statement)
+		statementsNew.append(replacePrefix(prefixList, statement))
+
+	''' Inserting into database '''
+	for statement in statementsNew:
+		pass
 
 if __name__ == '__main__':
 
@@ -146,29 +184,15 @@ if __name__ == '__main__':
 	print ("Opened database successfully")
 
 	# create tables
-	try:	
+	try:
 		conn.execute('''
 			CREATE TABLE statement(
 			   	id INT PRIMARY KEY,
-			   	sub_id INT,
-			   	pred_id INT,
-			   	obj_id INT
+			   	subject VARCHAR(100),
+			   	predicate VARCHAR(100),
+			   	object VARCHAR(100)
 			);''')
 
-		conn.execute('''
-			CREATE TABLE node(
-				node_id INT,
-				uri VARCHAR(100),
-				value VARCHAR(100),
-				type VARCHAR(10),
-				has_prefix VARCHAR(10)
-			);''')
-
-		conn.execute('''
-			CREATE TABLE prefix(
-				abbr VARCHAR(10),
-				url VARCHAR(100)
-			);''')
 		print ("Table created successfully")
 
 	except sqlite3.OperationalError as e:
