@@ -119,6 +119,11 @@ def replacePrefix(prefixDict, statement):
 			outputStmt.append(node)
 		elif node[0]=='"' and node[-1]=='"':
 			# for string literals
+
+			''' May not be needed
+			if node[1]=="\\": # deal with a special case, where an extra back-slash \ has been added to the string literals
+				node = node[0]+node[2:] # remove the additional backslashes
+			'''
 			outputStmt.append(node)
 		elif node.isnumeric():
 			# for int, all int literals should be stored with double quotes??????
@@ -144,7 +149,46 @@ def replacePrefix(prefixDict, statement):
 	return outputStmt
 
 
-def main(dataList):
+def main(db, filename):
+
+	conn = sqlite3.connect(db)
+	print ("Opened database successfully")
+
+	# create tables
+	try:
+		conn.execute('''
+			CREATE TABLE statement(
+			   	id INT PRIMARY KEY,
+			   	subject VARCHAR(100),
+			   	predicate VARCHAR(100),
+			   	object VARCHAR(100)
+			);''')
+
+		print ("Table created successfully")
+
+	except sqlite3.OperationalError as e:
+		print("Table already existed for the operation")
+
+	dataList = []
+	dataString = ''
+	# possess the original file
+	with open(filename) as f:
+		for line in f:
+			dataString+=' '.join(line.rstrip('\n').split('\t')) # replace \n or \t with proper spaces
+			dataString+=' '
+	# now the original file is represented as a single string -- dataString
+
+	# replace the extra spaces remaining in the dataString
+	dataString = dataString.replace(SEMICOLON_DELIMATOR, ";")
+	dataString = dataString.replace(COMMA_DELIMATOR, "，")
+	#print(dataString)
+	# extract each triple/prefix from the dataString, and store them into a list
+	# each element of dataList is a prefix or a triple, 
+	# the last element should be discard because it's empty
+	dataList = dataString.split(PERIOD_DELIMATOR)[:-1] 
+	#print('')
+	#print(dataList)
+
 	prefixList = {}
 	statements = []
 	for data in dataList:
@@ -171,8 +215,14 @@ def main(dataList):
 		statementsNew.append(replacePrefix(prefixList, statement))
 
 	''' Inserting into database '''
+	id = 0
 	for statement in statementsNew:
-		pass
+		conn.execute("INSERT INTO statement (id, subject, predicate, object) VALUES (?,?,?,?)", (id, statement[0], statement[1], statement[2]));
+		id+=1
+
+	print("Table updated successfully")
+	conn.commit()
+	conn.close()
 
 if __name__ == '__main__':
 
@@ -180,47 +230,8 @@ if __name__ == '__main__':
 		print("Missing arguments")
 		sys.exit()
 	
-	conn = sqlite3.connect(sys.argv[1])
-	print ("Opened database successfully")
-
-	# create tables
-	try:
-		conn.execute('''
-			CREATE TABLE statement(
-			   	id INT PRIMARY KEY,
-			   	subject VARCHAR(100),
-			   	predicate VARCHAR(100),
-			   	object VARCHAR(100)
-			);''')
-
-		print ("Table created successfully")
-
-	except sqlite3.OperationalError as e:
-		print("Table already existed for the operation")
-
+	db = sys.argv[1]
 	# read in the filename to operate
 	filename = sys.argv[2]
 
-	dataList = []
-	dataString = ''
-	# possess the original file
-	with open(filename) as f:
-		for line in f:
-			dataString+=' '.join(line.rstrip('\n').split('\t')) # replace \n or \t with proper spaces
-			dataString+=' '
-	# now the original file is represented as a single string -- dataString
-
-	# replace the extra spaces remaining in the dataString
-	dataString = dataString.replace(SEMICOLON_DELIMATOR, ";")
-	dataString = dataString.replace(COMMA_DELIMATOR, "，")
-	#print(dataString)
-	# extract each triple/prefix from the dataString, and store them into a list
-	# each element of dataList is a prefix or a triple, 
-	# the last element should be discard because it's empty
-	dataList = dataString.split(PERIOD_DELIMATOR)[:-1] 
-	#print(dataList)
-	
-	main(dataList)
-
-	conn.commit()
-	conn.close()
+	main(db, filename)
