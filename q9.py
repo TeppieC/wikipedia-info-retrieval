@@ -10,35 +10,44 @@ def main(db, filename):
 	# possess the original file
 	with open(filename) as f:
 		for line in f:
-			l = line.rstrip('\n').strip()
+			l = line.rstrip('\n')
 			if not l=='':
 				lines.append(l) # process the lines
 
 	prefix = {}
+	queryStr = ''
 	queryVars = []
 	triples = []
 
 	# extract data
 	for line in lines:
 		# for each line of the file
-		print(line+'|EOF') # for debug use
-		if isPrefix(line):
-			pass
-		elif startWithSelect(line):
-			if endWithBrace(line):
-				# SELECT ?v1 ?v2 ?v3 WHERE {
-				pass
-			elif endWithWhere(line):
-				# SELECT ?v1 ?v2 ?v3 WHERE
-				pass
-			else:
-				# SELECT ?v1 ?v2 ?v3
-				pass
-		elif startWithWhere(line):
-			if endWithBrace(line):
-				pass
-			else:
+		if isPrefix(line.strip()):
+			temp = line.split(':') # temp == ['PREFIX rdf', ' <http://www.w3.org/1999/02/22-rdf-syntax-ns#>']
+			parts = temp[0].split() # parts == ['PREFIX', 'rdf']
+			parts.append(temp[1]) # parts == ['PREFIX', 'rdf', ' <http://www.w3.org/1999/02/22-rdf-syntax-ns#>']
+			prefix[parts[1].strip()] = parts[2].strip() #store the prefix
+		else:
+			queryStr+=line
 
+	# possess the query string
+	queryStr.replace('\t',' ')
+	queryStr.replace('\s',' ')
+	queryStr.replace('\n',' ')
+	print(queryStr)
+
+	if not validateQuery(queryStr):
+		print('Query not valid')
+		sys.exit()	
+
+	for key, value in prefix.items():
+		print(key, value)
+
+	queryVars = extractVariables(queryStr)
+	print(queryVars)
+
+	triples = extractTriples(queryStr)
+	print(triples)
 
 
 
@@ -48,11 +57,44 @@ def main(db, filename):
 def validatePrefix(line):
 	pass
 
-def validateQuery(line):
+def validateQuery(string):
 	# no more than one occurance of {,},SELECT,WHERE
 	# SELECT occurs before WHERE
 	# { occurs before }
-	pass
+	if not string.count('SELECT')==1:
+		return False
+	if not string.count('WHERE')==1:
+		return False
+	if not string.count('{')==1:
+		return False
+	if not string.count('}')==1:
+		return False
+	return True
+
+def extractVariables(string):
+	# return the list of variables to query
+	start = string.index('SELECT')+len('SELECT')
+	end = string.index('WHERE')
+	variableStr = string[start:end].strip()
+	variables = variableStr.split()
+	for var in variables:
+		if not (var[0]=='?' or var=='*'):
+			print('Invalid variables to query')
+			sys.exit()
+	return variables
+
+def extractTriples(string):
+	# return the list of list of nodes to query
+	start = string.index('{')+len('{')
+	end = string.index('}')
+	tripleStr = string[start:end].strip()
+	triples = tripleStr.split('.')
+	output = []
+	for triple in triples:
+		lst = triple.split()
+		if lst: # if is not an empty list(may caused by tailing spaces)
+			output.append(lst)
+	return output
 
 def isPrefix(string):
 	if string.split(' ')[0]=='PREFIX':
@@ -60,35 +102,14 @@ def isPrefix(string):
 	else:
 		return False
 
-def startWithSelect(string):
-	if string.split(' ')[0]=='SELECT':
-		return True
-	else:
-		return False
-
-def startWithWhere(string):
-	if string.split(' ')[0]=='WHERE':
-		return True
-	else:
-		return False
-
-def endWithWhere(string):
-	if string.split(' ')[-1]=='WHERE':
-		return True
-	else:
-		return False
-
-def startWithBrace(string):
-	if string[0]=='{' or string[0]=='}':
-		return True
-	else:
-		return False
-
-def endWithBrace(string):
-	if string[-1]=='}' or string[-1]=='{':
-		return True
-	else:
-		return False
+def possessLines(lines):
+	string=''
+	for line in lines:
+		string+=line
+	string.replace('\t',' ')
+	string.replace('\s',' ')
+	string.replace('\n',' ')
+	return string
 
 if __name__ == '__main__':
 

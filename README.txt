@@ -5,6 +5,14 @@ For q1:
 	Our approach: football clubs in italy --> stadiums used by the clubs --> the capacities of the stadiums
 
 For q6,7,8:
+	TODO: to distinguish float and decimal
+	1. We store all literals in lexical
+		17 --> "17"^^xsd:integer
+		"mayor" --> "mayor"^xsd:integer
+	2. We store all nodes of triples with complete uri
+		dbr:Edmonton --> <http://dbpedia.org/resource/Edmonton>
+	
+
 	Do we assume that prefixes can be repeated? overriden throughout the file? 
 	How do I know which type is the value, from the file? eg. if is int for population
 		How to distinguish those types??? --> w/o quotes?
@@ -18,6 +26,7 @@ For q6,7,8:
 		every node, along with its prefix and data type
 		every prefix defination
 		every rdf statement
+
 
 How should we deal with these types? 1. convert to pure literals such as float or int 2. cast to string
 "53.53333282470703125"^^xsd:float
@@ -40,3 +49,9 @@ How about empty nodes? _/??? or _???
 		因此，在q8中，需要将所有的int/float/decimal存为^^xsd:...形式的，带有double quote的字符
 			若原来就是这种形式，将他们直接放进去；若原来是单纯的float/int形式，把他们变成xsd的形式
 	2. 对于q8中的delimitor，似乎并不一定是固定的格式，还得再想想，下周问一次ta确定一下
+
+FOR q9:
+	do we validate the query file?
+	can we assume that the query consists SELECT and WHERE in capitalized forms?
+
+Comment掉所有sys.exit() 别给自己埋坑

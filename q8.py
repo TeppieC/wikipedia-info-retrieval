@@ -102,7 +102,10 @@ def isfloat(value):
 	except ValueError:
 		return False
 
-def isSpecialType(string):
+def isBoolean(value):
+	return (value=="false" or value=="true")
+
+def isLexical(string):
 	'''
 	determine if the type of the literal is like "1904-10-08"^^xsd:date
 	'''
@@ -119,24 +122,21 @@ def replacePrefix(prefixDict, statement):
 			outputStmt.append(node)
 		elif node[0]=='"' and node[-1]=='"':
 			# for string literals
-
-			''' May not be needed
-			if node[1]=="\\": # deal with a special case, where an extra back-slash \ has been added to the string literals
-				node = node[0]+node[2:] # remove the additional backslashes
-			'''
-			outputStmt.append(node)
+			outputStmt.append(node+'^^xsd:string')
 		elif node.isnumeric():
-			# for int, all int literals should be stored with double quotes??????
-			outputStmt.append('"'+node+'"')
+			# for int
+			outputStmt.append('"'+node+'"^^xsd:integer')
 		elif isfloat(node):
-			# for float/decimal, all string literals should be stored with double quotes?????
-			outputStmt.append('"'+node+'"')
-		elif isSpecialType(node):
-			# for other literal types
-			# "1904-10-08"^^xsd:date --> "1904-10-08"
-			# "53.53333282470703125"^^xsd:float --> "53.53333282470703125"
-			# "812201"^^xsd:nonNegativeInteger --> "812201"
-			outputStmt.append(node[:node.index("^^")])
+			# for float/decimal
+			outputStmt.append('"'+node+'"^^xsd:decimal')
+		elif isLexical(node):
+			# for the lexical data types, store them directly
+			# "1904-10-08"^^xsd:date
+			# "53.53333282470703125"^^xsd:float
+			# "812201"^^xsd:nonNegativeInteger
+			outputStmt.append(node)
+		elif isBoolean(node):
+			outputStmt.append('"'+node+'"^^xsd:boolean')
 		else:
 			# for prefixed nodes
 			nodeList = node.split(":")
