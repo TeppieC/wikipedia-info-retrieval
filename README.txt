@@ -55,3 +55,5 @@ FOR q9:
 	can we assume that the query consists SELECT and WHERE in capitalized forms?
 
 Comment掉所有sys.exit() 别给自己埋坑
+
+应该是我有一些隐藏的特性没有发现，应该不会这么难的。

@@ -23,7 +23,7 @@ def main(db, filename):
 	for line in lines:
 		# for each line of the file
 		if isPrefix(line.strip()):
-			temp = line.split(':') # temp == ['PREFIX rdf', ' <http://www.w3.org/1999/02/22-rdf-syntax-ns#>']
+			temp = line.split(':', 1) # temp == ['PREFIX rdf', ' <http://www.w3.org/1999/02/22-rdf-syntax-ns#>']
 			parts = temp[0].split() # parts == ['PREFIX', 'rdf']
 			parts.append(temp[1]) # parts == ['PREFIX', 'rdf', ' <http://www.w3.org/1999/02/22-rdf-syntax-ns#>']
 			prefix[parts[1].strip()] = parts[2].strip() #store the prefix
@@ -43,16 +43,57 @@ def main(db, filename):
 	for key, value in prefix.items():
 		print(key, value)
 
+	# extract all statements
+	statements = extractStatements(queryStr)
+	print(statements)
+	fullStatements = replacePrefix(statements, prefix)
+	print(fullStatements)
+
+	# extracting all querying variables
 	queryVars = extractVariables(queryStr)
 	print(queryVars)
 
-	triples = extractTriples(queryStr)
-	print(triples)
-
-
+	# create the result table
+	createResultTable(conn, queryVars)
 
 	conn.commit()
 	conn.close()
+
+def createResultTable(conn, queryVars):
+	variables = tuple(a[1:] for a in queryVars) # list comprehension for creating a tuple
+	createStmt = 'CREATE TABLE result( ' + '%s VARCHAR(100),'*len(queryVars)%variables
+	createStmt = createStmt[:-1]+');'
+	print(createStmt)
+	# create tables
+	try:
+		conn.execute(createStmt)
+		print ("Table created successfully")
+	except sqlite3.OperationalError as e:
+		print("Table already existed for the operation")
+
+def oneVarStmt(stmt, var):
+	nodeData = ''
+	i=0
+	for node in stmt:
+		if isVariable(node):
+			i+=1
+			nodeData = node
+	if i==0 and node==var:
+		return True
+	else:
+		return False
+
+def queryInOneVarStmt(statements, var):
+	query = 'SELECT subject FROM result WHERE predicate=%s AND object=%s'
+	query = 'SELECT predicate FROM result WHERE subject=%s AND object=%s'
+	query = 'SELECT object FROM result WHERE subject=%s AND predicate=%s'	
+	for statement in statements:
+		# first query for all statements with only one variable inside, the variable should be exactly 'var'
+		if oneVarStmt(stmt, var): 
+			pass
+
+def queryForVar(conn, var, statements):
+	pass
 
 def validatePrefix(line):
 	pass
@@ -83,7 +124,47 @@ def extractVariables(string):
 			sys.exit()
 	return variables
 
-def extractTriples(string):
+def isLexical(string):
+	'''
+	determine if the type of the literal is like "1904-10-08"^^xsd:date
+	'''
+	if "^^xsd" in string:
+		return True
+	else:
+		return False
+
+def replacePrefix(statements, prefixDict):
+	outputStmts = []
+	for statement in statements:
+		outputStmt = []
+		for node in statement:
+			if isVariable(node):
+				outputStmt.append(node)
+			elif(node[0]=='<' and node[-1]=='>'):
+				# for pure uri's
+				outputStmt.append(node)
+			elif isLexical(node):
+				# for the lexical data types
+				# "1904-10-08"^^xsd:date
+				# "53.53333282470703125"^^xsd:float
+				# "812201"^^xsd:nonNegativeInteger
+				outputStmt.append(node)
+			else:
+				# for prefixed nodes
+				nodeList = node.split(":")
+				prefix = ''
+				try:
+					prefix = prefixDict[nodeList[0]]
+				except KeyError: # for empty prefix/node
+					prefix = '<_/>'
+				print(prefix)
+				print(nodeList)
+				outputStmt.append(prefix[:-1] + nodeList[1] + prefix[-1])
+		outputStmts.append(outputStmt)
+	return outputStmts
+
+
+def extractStatements(string):
 	# return the list of list of nodes to query
 	start = string.index('{')+len('{')
 	end = string.index('}')
@@ -101,6 +182,9 @@ def isPrefix(string):
 		return True
 	else:
 		return False
+
+def isVariable(string):
+	return (string[0]=='?')
 
 def possessLines(lines):
 	string=''

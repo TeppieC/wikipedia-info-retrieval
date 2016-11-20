@@ -1,0 +1,2 @@
+We will use the most intuitive approach to store the RDF data into relational database. There will be only one table in the database, the table will be of exactly 3 columns. The columns will be named as "subject", "predicate" and "object" respectively. All data will be stored as complete uri's, enclosing by <>.  
+
