@@ -9,4 +9,15 @@ SELECT * WHERE {
   ?airport dbo:owner dbr:Transport_Canada.
 } 
 
-dbp:owner or dbo:owner ???
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX dbr: <http://dbpedia.org/resource/>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX dbc: <http://dbpedia.org/resource/Category:>
+SELECT * WHERE {
+  ?airport rdf:type dbo:Airport.
+  ?city dbo:country dbr:Canada.
+  ?airport dbo:city ?city.
+  ?airport dct:subject dbc:National_Airports_System.
+} 
