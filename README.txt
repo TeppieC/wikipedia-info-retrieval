@@ -56,4 +56,5 @@ FOR q9:
 
 Comment掉所有sys.exit() 别给自己埋坑
 
-应该是我有一些隐藏的特性没有发现，应该不会这么难的。
+航爷说了一个方法比较可行，但是需要statement table的多重self cartesian product. 
+-->应该可以用while loop来试一试。
