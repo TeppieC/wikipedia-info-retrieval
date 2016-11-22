@@ -5,11 +5,6 @@ SEMICOLON_DELIMATOR = ' ; '
 COMMA_DELIMATOR = ' ,   '
 PERIOD_DELIMATOR = ' . '
 
-class Triple():
-	"""docstring for Triple"""
-	def __init__(self, dataString):
-		self.dataString = dataString
-
 def isValidPrefix(string):
 	stringList = string.split(' ')
 	if not len(stringList)==3:
@@ -21,9 +16,6 @@ def isValidPrefix(string):
 	if stringList[2][0]!='<' or stringList[2][-1]!='>':
 		return False
 	return True
-
-def isValidTriple(string):
-	pass
 
 def splitBySemicolon(data):
 	tripleList = data.strip(' ').split(';')
@@ -156,18 +148,17 @@ def main(db, filename):
 
 	# create tables
 	try:
-		conn.execute('''
-			CREATE TABLE statement(
-			   	id INT PRIMARY KEY,
-			   	subject VARCHAR(100),
-			   	predicate VARCHAR(100),
-			   	object VARCHAR(100)
-			);''')
+		create = 'CREATE TABLE statement('+ \
+				 ' id INT PRIMARY KEY,' + \
+				 ' subject VARCHAR(100),' + \
+				 ' predicate VARCHAR(100),'+\
+				 ' object VARCHAR(100));'
+		conn.execute(create)
 
 		print ("Table created successfully")
 
 	except sqlite3.OperationalError as e:
-		print("Table already existed for the operation")
+		print(e)
 
 	dataList = []
 	dataString = ''
@@ -216,9 +207,14 @@ def main(db, filename):
 
 	''' Inserting into database '''
 	id = 0
-	for statement in statementsNew:
-		conn.execute("INSERT INTO statement (id, subject, predicate, object) VALUES (?,?,?,?)", (id, statement[0], statement[1], statement[2]));
-		id+=1
+	try:
+		for statement in statementsNew:
+			conn.execute("INSERT INTO statement (id, subject, predicate, object) VALUES (?,?,?,?)", (id, statement[0], statement[1], statement[2]));
+			id+=1
+	except sqlite3.IntegrityError:
+		print('Data has already existed in the database./ Integrity Error: abort the commit.')
+		conn.close()
+		sys.exit()
 
 	print("Table updated successfully")
 	conn.commit()

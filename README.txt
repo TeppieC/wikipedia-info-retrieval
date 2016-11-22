@@ -56,5 +56,4 @@ FOR q9:
 
 Comment掉所有sys.exit() 别给自己埋坑
 
-航爷说了一个方法比较可行，但是需要statement table的多重self cartesian product. 
--->应该可以用while loop来试一试。
+do I have to create the empty database,eg. test.db at first?
