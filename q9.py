@@ -71,6 +71,9 @@ def createResultTable(conn, queryVars):
 	except sqlite3.OperationalError as e:
 		print("Table already existed for the operation")
 
+def query(conn, queryVars):
+	intersect = ' INTERSECT '
+
 def oneVarStmt(stmt, var):
 	nodeData = ''
 	i=0
@@ -83,10 +86,17 @@ def oneVarStmt(stmt, var):
 	else:
 		return False
 
+def stmtsForVar(statements, var)
+
+def CreateQuery(sub, pred, obj, varNode):
+	if varNode=='subject':
+		return 'SELECT subject FROM statement WHERE predicate=%s AND object=%s'%(pred, obj)
+	elif varNode=='predicate':
+		return 'SELECT predicate FROM statement WHERE subject=%s AND object=%s'%(sub, obj)
+	elif varNode=='object':
+		return 'SELECT object FROM statement WHERE subject=%s AND predicate=%s'%(sub, pred)
+
 def queryInOneVarStmt(statements, var):
-	query = 'SELECT subject FROM result WHERE predicate=%s AND object=%s'
-	query = 'SELECT predicate FROM result WHERE subject=%s AND object=%s'
-	query = 'SELECT object FROM result WHERE subject=%s AND predicate=%s'	
 	for statement in statements:
 		# first query for all statements with only one variable inside, the variable should be exactly 'var'
 		if oneVarStmt(stmt, var): 
