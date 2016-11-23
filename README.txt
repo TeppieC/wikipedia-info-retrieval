@@ -56,4 +56,5 @@ FOR q9:
 
 Comment掉所有sys.exit() 别给自己埋坑
 
-do I have to create the empty database,eg. test.db at first?
+name the table with statement? is that okay?
+return value should be in which form? For example:<http://dbpedia.org/resource/Edmonton>?

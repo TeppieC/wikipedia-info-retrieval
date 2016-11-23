@@ -45,18 +45,18 @@ def main(db, filename):
 
 	# extract all statements
 	statements = extractStatements(queryStr)
-	print(statements)
+	print('statements', statements)
 	fullStatements = replacePrefix(statements, prefix)
-	print(fullStatements)
+	print('full statements', fullStatements)
 
 	# extracting all querying variables
 	queryVars = extractVariables(queryStr)
-	print(queryVars)
+	print('queryVars', queryVars)
 
 	# create the result table
 	#createResultTable(conn, queryVars)
 	for var in queryVars:
-		queryInOneVarStmt(conn, statements, var)
+		queryInOneVarStmt(conn, fullStatements, var)
 	
 	conn.commit()
 	conn.close()
@@ -80,11 +80,19 @@ def isOneVarStmt(stmt, var):
 	'''
 	nodeData = ''
 	i=0
+	print('stmt is: ', stmt)
 	for node in stmt:
+		print('node is: ', node)
 		if isVariable(node):
+			print('is variable')
 			i+=1
 			nodeData = node
-	if i==0 and node==var:
+			print('nodeData is: ', nodeData)
+
+	print('After: ')
+	print(nodeData)
+	print(var)
+	if i==1 and nodeData==var:
 		# if the given var occurs only once in the stmt
 		return True
 	else:
@@ -104,11 +112,11 @@ def oneVarQueryString(sub, pred, obj, varNode):
 	return the string of a sqlite query for a given variable
 	'''
 	if varNode=='subject':
-		return 'SELECT subject FROM statement WHERE predicate=%s AND object=%s'%(pred, obj)
+		return "SELECT subject FROM statement WHERE predicate='%s' AND object='%s'"%(pred, obj)
 	elif varNode=='predicate':
-		return 'SELECT predicate FROM statement WHERE subject=%s AND object=%s'%(sub, obj)
+		return "SELECT predicate FROM statement WHERE subject='%s' AND object='%s'"%(sub, obj)
 	elif varNode=='object':
-		return 'SELECT object FROM statement WHERE subject=%s AND predicate=%s'%(sub, pred)
+		return "SELECT object FROM statement WHERE subject='%s' AND predicate='%s'"%(sub, pred)
 
 def queryInOneVarStmt(conn, statements, var):
 	'''
@@ -119,17 +127,19 @@ def queryInOneVarStmt(conn, statements, var):
 	The function will create a table for the results after querying all one-variable statements on this var.
 		eg. table will be named as ?city
 	'''
-	create_stmt = 'CREATE TABLE %s (%s TEXT)'%(var, var)
+	create_stmt = 'CREATE TABLE %s (%s TEXT)'%(var[1:], var[1:])
 	conn.execute(create_stmt)
 
-	insert_stmt = 'INSERT INTO %s '%(var)
+	insert_stmt = 'INSERT INTO %s '%(var[1:])
 	for statement in statements:
 		# first query for all statements with only one variable inside, the variable should be exactly 'var'
 		if isOneVarStmt(statement, var):
-			sql_stmt = oneVarStmt(var)
+			print('one var stmt for ', var, statement)
+			sql_stmt = stmtForVar(statement, var)
 			insert_stmt += sql_stmt
 			insert_stmt += ' INTERSECT '
-	print(insert_stmt[:-11])
+	print(insert_stmt[:-11]) #.............................. may exceed
+	conn.execute(insert_stmt)
 
 
 def validatePrefix(line):
@@ -155,10 +165,12 @@ def extractVariables(string):
 	end = string.index('WHERE')
 	variableStr = string[start:end].strip()
 	variables = variableStr.split()
+	# validating
 	for var in variables:
 		if not (var[0]=='?' or var=='*'):
 			print('Invalid variables to query')
 			sys.exit()
+	# TODO: handle *
 	return variables
 
 def isLexical(string):
