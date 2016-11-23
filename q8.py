@@ -40,7 +40,7 @@ def splitByComma(triple):
 	statements = []
 
 	#print(triple)
-	nodes = triple.strip(' ').split(' ')
+	nodes = triple.strip(' ').split()
 	#print(nodes)
 	# validate the triple data
 	while not len(nodes)==3:
@@ -141,9 +141,13 @@ def replacePrefix(prefixDict, statement):
 			nodeList = node.split(":")
 			prefix = ''
 			try:
-				prefix = prefixDict[nodeList[0]]
-			except KeyError: # for empty prefix/node
-				prefix = '<_/>'
+				if nodeList[0]=='_': # for empty prefix
+					prefix = '<_/>'
+				else:
+					prefix = prefixDict[nodeList[0]]
+			except KeyError: 
+				print('Undocumentable prefix defination: ', nodeList[0])
+				sys.exit()
 			outputStmt.append(prefix[:-1] + nodeList[1] + prefix[-1])
 	return outputStmt
 

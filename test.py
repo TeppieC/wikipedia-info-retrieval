@@ -17,7 +17,6 @@ def main(db, filename):
 	prefix = {}
 	queryStr = ''
 	queryVars = []
-	allVars = []
 	triples = []
 
 	# extract data
@@ -38,32 +37,25 @@ def main(db, filename):
 	print(queryStr)
 
 	if not validateQuery(queryStr):
-		print('Query not valid')
+		#print('Query not valid')
 		sys.exit()	
 
-	for key, value in prefix.items():
-		print(key, value)
-
-	# extract all querying statements inside the braces
+	# extract all statements
 	statements = extractStatements(queryStr)
-	print('statements', statements)
-	statements = replacePrefix(statements, prefix)
-	print('full statements', statements)
-
-	# extracting all variables created in the query
-	allVars = extractAllVariables(statements)
+	#print('statements', statements)
+	fullStatements = replacePrefix(statements, prefix)
+	#print('full statements', fullStatements)
 
 	# extracting all querying variables
 	queryVars = extractVariables(queryStr)
-	print('queryVars', queryVars)
-	if queryVars[0]=='*':
-		queryVars = allVars
+	#print('queryVars', queryVars)
 
 	# create the result table
 	#createResultTable(conn, queryVars)
 	for var in queryVars:
-		queryInOneVarStmt(conn, statements, var)
-	
+		#queryInOneVarStmt(conn, fullStatements, var)
+		stmt = 'drop table %s;'%(var[1:])
+
 	conn.commit()
 	conn.close()
 
@@ -150,6 +142,7 @@ def queryInOneVarStmt(conn, statements, var):
 		print(insert_stmt[:-11]+';') #.............................. may exceed
 		conn.execute(insert_stmt[:-11]+';')
 
+
 def validatePrefix(line):
 	pass
 
@@ -166,15 +159,6 @@ def validateQuery(string):
 	if not string.count('}')==1:
 		return False
 	return True
-
-def extractAllVariables(statements):
-	allVars = set()
-	for statement in statements:
-		for node in statement:
-			if isVariable(node):
-				allVars.add(node)
-	return list(allVars)
-
 
 def extractVariables(string):
 	# return the list of variables to query
@@ -217,21 +201,15 @@ def replacePrefix(statements, prefixDict):
 				outputStmt.append(node)
 			else:
 				# for prefixed nodes
-				if node[0]!='<': # if the node is not a prefixed node, nor a literal
-					print('here:', node)
-					nodeList = node.split(":")
-					prefix = ''
-					try:
-						if nodeList[0]=='_': # for empty prefix
-							prefix = '<_/>'
-						else:
-							prefix = prefixDict[nodeList[0]]
-					except KeyError: 
-						print('Undocumentable prefix defination: ', nodeList[0])
-						sys.exit()
-					print(prefix)
-					print(nodeList)
-					outputStmt.append(prefix[:-1] + nodeList[1] + prefix[-1])
+				nodeList = node.split(":")
+				prefix = ''
+				try:
+					prefix = prefixDict[nodeList[0]]
+				except KeyError: # for empty prefix/node
+					prefix = '<_/>'
+				print(prefix)
+				print(nodeList)
+				outputStmt.append(prefix[:-1] + nodeList[1] + prefix[-1])
 		outputStmts.append(outputStmt)
 	return outputStmts
 
@@ -241,48 +219,13 @@ def extractStatements(string):
 	start = string.index('{')+len('{')
 	end = string.index('}')
 	tripleStr = string[start:end].strip()
-
-	# possess the triple statements at first,
-	# in case that teh string is split on wrong locations
-	possessedTripleStr = replaceTripleStr(tripleStr)
-	print("here: ", possessedTripleStr)
-
-	triples = possessedTripleStr.split('.')
-	print(triples)
+	triples = tripleStr.split('.')
 	output = []
-
 	for triple in triples:
 		lst = triple.split()
-		print('lst: ', lst)
 		if lst: # if is not an empty list(may caused by tailing spaces)
 			output.append(lst)
-	
-	for i in range(0, len(output)):
-		stmt = output[i]
-		for j in range(0, len(stmt)):
-			node = output[i][j]
-			if isUri(node):
-				output[i][j] = node.replace('/////', '.').replace('$$$$$', ',')
-				print('haha: ', output[i][j])
-	print(output)
 	return output
-
-def replaceTripleStr(tripleStr):
-	allNodes = tripleStr.split()
-	for i in range(0, len(allNodes)):
-		node = allNodes[i]
-		if isUri(node):
-			print('AAAAAAAAAAAAAA URI', node)
-			node = node.replace('.', '/////')
-			node = node.replace(',', '$$$$$')
-			allNodes[i] = node
-		elif isDecimal(node):
-			pass
-	print(allNodes)
-	return ' '.join(allNodes)
-
-def isUri(string):
-	return (string[0]=='<' and string[-1]=='>')
 
 def isPrefix(string):
 	if string.split(' ')[0]=='PREFIX':
