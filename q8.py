@@ -1,6 +1,13 @@
 import sys
 import sqlite3
 
+'''
+Assuming that if a rdf format txt file is valid, 
+the delimator between triples are " .\n"
+the delimator between different prediactes are " ;\n\t"
+the delimator between different objects are " ,\n\t\t"
+for example, in Edmonton.txt
+'''
 SEMICOLON_DELIMATOR = ' ; '
 COMMA_DELIMATOR = ' ,   '
 PERIOD_DELIMATOR = ' . '
