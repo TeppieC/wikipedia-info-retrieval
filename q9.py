@@ -54,8 +54,10 @@ def main(db, filename):
 	print(queryVars)
 
 	# create the result table
-	createResultTable(conn, queryVars)
-
+	#createResultTable(conn, queryVars)
+	for var in queryVars:
+		queryInOneVarStmt(conn, statements, var)
+	
 	conn.commit()
 	conn.close()
 
@@ -71,10 +73,11 @@ def createResultTable(conn, queryVars):
 	except sqlite3.OperationalError as e:
 		print("Table already existed for the operation")
 
-def query(conn, queryVars):
-	intersect = ' INTERSECT '
-
-def oneVarStmt(stmt, var):
+def isOneVarStmt(stmt, var):
+	'''
+	Return true if the stmt is a one-variable statement of var
+	otherwise false.
+	'''
 	nodeData = ''
 	i=0
 	for node in stmt:
@@ -82,13 +85,24 @@ def oneVarStmt(stmt, var):
 			i+=1
 			nodeData = node
 	if i==0 and node==var:
+		# if the given var occurs only once in the stmt
 		return True
 	else:
+		# if the given var is not in stmt, or the stmt contains 
+		# more than one variables
 		return False
 
-def stmtsForVar(statements, var)
+def stmtForVar(stmt, var):
+	nodeType = {0:'subject', 1:'predicate', 2:'object'}
+	#find whether the variable is a subject, predicate or object.
+	varNode = nodeType[stmt.index(var)] 
+	print(varNode)
+	return oneVarQueryString(stmt[0], stmt[1], stmt[2], varNode)
 
-def CreateQuery(sub, pred, obj, varNode):
+def oneVarQueryString(sub, pred, obj, varNode):
+	'''
+	return the string of a sqlite query for a given variable
+	'''
 	if varNode=='subject':
 		return 'SELECT subject FROM statement WHERE predicate=%s AND object=%s'%(pred, obj)
 	elif varNode=='predicate':
@@ -96,14 +110,27 @@ def CreateQuery(sub, pred, obj, varNode):
 	elif varNode=='object':
 		return 'SELECT object FROM statement WHERE subject=%s AND predicate=%s'%(sub, pred)
 
-def queryInOneVarStmt(statements, var):
+def queryInOneVarStmt(conn, statements, var):
+	'''
+	query in the database for a given variable -- var.
+	The function will query according to all statements in the file which only has "var" as its variable.
+		eg. ?city dbo:country dbr:Canada. is the statement that this function will possess. In this case, 
+			var is ?city. The function will find and query in all such statements for ?city.
+	The function will create a table for the results after querying all one-variable statements on this var.
+		eg. table will be named as ?city
+	'''
+	create_stmt = 'CREATE TABLE %s (%s TEXT)'%(var, var)
+	conn.execute(create_stmt)
+
+	insert_stmt = 'INSERT INTO %s '%(var)
 	for statement in statements:
 		# first query for all statements with only one variable inside, the variable should be exactly 'var'
-		if oneVarStmt(stmt, var): 
-			pass
+		if isOneVarStmt(statement, var):
+			sql_stmt = oneVarStmt(var)
+			insert_stmt += sql_stmt
+			insert_stmt += ' INTERSECT '
+	print(insert_stmt[:-11])
 
-def queryForVar(conn, var, statements):
-	pass
 
 def validatePrefix(line):
 	pass
