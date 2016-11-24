@@ -70,6 +70,7 @@ def main(db, filename):
 		queryInOneVarStmt(conn, statements, var)
 
 	queryForRelations(conn, statements, queryVars, allVars)
+	#printResult(conn, queryVars)
 	
 	conn.commit()
 	conn.close()
@@ -193,6 +194,7 @@ def queryInOneVarStmt(conn, statements, var):
 	create_stmt = 'CREATE TABLE %s (%s TEXT)'%(var[1:], var[1:])
 	conn.execute(create_stmt)
 
+	pos = set()
 	insert_stmt = 'INSERT INTO %s '%(var[1:])
 	exce = False
 	for statement in statements:
@@ -203,19 +205,27 @@ def queryInOneVarStmt(conn, statements, var):
 			insert_stmt += sql_stmt
 			insert_stmt += ' INTERSECT '
 			exce = True
+		if var in statement:
+			pos.add(statement.index(var))
 	if exce:
 		print(insert_stmt[:-11]+';')
 		conn.execute(insert_stmt[:-11]+';')
 	else:
-		insert_stmt+='select distinct subject from statement;'
-		print(insert_stmt)
-		conn.execute(insert_stmt)
-		insert_stmt = 'INSERT INTO %s '%(var[1:])
-		insert_stmt+='select distinct predicate from statement;'
-		conn.execute(insert_stmt)
-		insert_stmt = 'INSERT INTO %s '%(var[1:])
-		insert_stmt+='select distinct object from statement;'
-		conn.execute(insert_stmt)
+		pos = list(pos)
+		for p in pos:
+			if p==0:
+				insert_stmt = 'INSERT INTO %s '%(var[1:])
+				insert_stmt+='select distinct subject from statement;'
+				print(insert_stmt)
+				conn.execute(insert_stmt)
+			elif p==1:
+				insert_stmt = 'INSERT INTO %s '%(var[1:])
+				insert_stmt+='select distinct predicate from statement;'
+				conn.execute(insert_stmt)
+			elif p==2:
+				insert_stmt = 'INSERT INTO %s '%(var[1:])
+				insert_stmt+='select distinct object from statement;'
+				conn.execute(insert_stmt)
 
 def concat(select_clause, from_tables, where_clause):
 	return select_clause+from_tables+where_clause
@@ -431,6 +441,14 @@ def possessLines(lines):
 	string.replace('\s',' ')
 	string.replace('\n',' ')
 	return string
+
+def printResult(conn, queryVars):
+	conn.commit()
+	conn.execute('SELECT * FROM result;')
+	for var in queryVars:
+		drop = 'drop table %s;'%(var[1:])
+		conn.execute(drop)
+	conn.execute('drop table result')
 
 if __name__ == '__main__':
 
