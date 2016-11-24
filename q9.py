@@ -29,13 +29,18 @@ def main(db, filename):
 			parts.append(temp[1]) # parts == ['PREFIX', 'rdf', ' <http://www.w3.org/1999/02/22-rdf-syntax-ns#>']
 			prefix[parts[1].strip()] = parts[2].strip() #store the prefix
 		else:
-			queryStr+=line
+			if line[-1]=='.' and line[-2]!=' ':
+				queryStr+=line[:-1]
+				queryStr+=' '
+				queryStr+='. '
+			else:
+				queryStr+=line
 
 	# possess the query string
 	queryStr.replace('\t',' ')
 	queryStr.replace('\s',' ')
 	queryStr.replace('\n',' ')
-	print(queryStr)
+	print('query string is: ', queryStr)
 
 	if not validateQuery(queryStr):
 		print('Query not valid')
@@ -245,7 +250,7 @@ def extractStatements(string):
 	# possess the triple statements at first,
 	# in case that teh string is split on wrong locations
 	possessedTripleStr = replaceTripleStr(tripleStr)
-	print("here: ", possessedTripleStr)
+	print("possessed: ", possessedTripleStr)
 
 	triples = possessedTripleStr.split('.')
 	print(triples)
@@ -261,13 +266,27 @@ def extractStatements(string):
 		stmt = output[i]
 		for j in range(0, len(stmt)):
 			node = output[i][j]
-			if isUri(node):
-				output[i][j] = node.replace('/////', '.').replace('$$$$$', ',')
-				print('haha: ', output[i][j])
+			output[i][j] = node.replace('/////', '.').replace('$$$$$', ',').replace('######',' ')
+			print('change back: ', output[i][j])
 	print(output)
 	return output
 
+def replaceSpaceInStr(tripleStr):
+	allNodes = tripleStr.split()
+	for i in range(0, len(allNodes)):
+		try:
+			if allNodes[i][0]=='"' and allNodes[i][-1]!='"' \
+				and allNodes[i+1][0]!='"' and allNodes[i+1][-1]=='"':
+				allNodes[i] = allNodes[i]+'######'+allNodes[i+1]
+				allNodes.remove(allNodes[i+1])
+		except:
+			pass
+	return ' '.join(allNodes)
+
+
 def replaceTripleStr(tripleStr):
+	tripleStr = replaceSpaceInStr(tripleStr)
+	print('hehehe', tripleStr)
 	allNodes = tripleStr.split()
 	for i in range(0, len(allNodes)):
 		node = allNodes[i]
@@ -276,10 +295,28 @@ def replaceTripleStr(tripleStr):
 			node = node.replace('.', '/////')
 			node = node.replace(',', '$$$$$')
 			allNodes[i] = node
-		elif isDecimal(node):
-			pass
+		elif isfloat(node):
+			print('AAAAAAAAAAAAAA decimal/float', node)
+			node = node.replace('.', '/////')
+			allNodes[i] = node
 	print(allNodes)
 	return ' '.join(allNodes)
+
+def isfloat(value):
+	try:
+		float(value)
+		return True
+	except ValueError:
+		return False
+
+def isLiteral(node):
+	nodeList = node.split(":")
+	if isLexical(node):
+		return True
+	elif len(nodeList)==1 or (node[0]=='"' and node[-1]=='"'):
+		return True
+	else:
+		return False
 
 def isUri(string):
 	return (string[0]=='<' and string[-1]=='>')

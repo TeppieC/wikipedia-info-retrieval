@@ -23,8 +23,8 @@ For q6,7,8:
 How about empty nodes? _/??? or _???
 
 FOR q9:
-	do we validate the query file?
-	can we assume that the query consists SELECT and WHERE in capitalized forms?
+	SELECT and WHERE in capitalized forms?
+	every line of query statement should be in the form of "subject predicate object . "
 
 name the table as "statement"? is that okay? okay
 return value should be in which form? For example:<http://dbpedia.org/resource/Edmonton>? okay

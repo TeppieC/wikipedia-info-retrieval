@@ -176,6 +176,13 @@ def main(db, filename):
 	# possess the original file
 	with open(filename) as f:
 		for line in f:
+			line = line.rstrip('\n').split('\t')
+			if line[-1]=='.' and line[-2]!=' ':
+				dataString+=line[:-1]
+				dataString+=' '
+				dataString+='. '
+			else:
+				queryStr+=line
 			dataString+=' '.join(line.rstrip('\n').split('\t')) # replace \n or \t with proper spaces
 			dataString+=' '
 	# now the original file is represented as a single string -- dataString

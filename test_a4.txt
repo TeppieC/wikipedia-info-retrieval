@@ -5,6 +5,11 @@ PREFIX dbo: <http://dbpedia.org/ontology/>
 SELECT ?city ?title WHERE {
     ?city rdf:type schema:City .
   	?city dbo:country <http://dbpedia.org/resource/Canada> .
-  	<http://dbpedia.org/resource/Edmonton> ?title "Mayor"^^xsd:string
+  	<http://dbpedia.org/resource/Edmonton> ?title "Mayor"^^xsd:string	.
+  	<http://www.dbpedia.org/resource/Edmonton> ?title "Mayor 2" .
+  	
+  	<http://www.dbpedia.org/resource/Edmon,_ton> ?title "Mayor,".
+  	
+  	<http://dbpedia.org/resource/Edmonton> ?title 2.4.
  
 } 
