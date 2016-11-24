@@ -182,9 +182,9 @@ def main(db, filename):
 	try:
 		create = 'CREATE TABLE statement('+ \
 				 ' id INT PRIMARY KEY,' + \
-				 ' subject VARCHAR(100),' + \
-				 ' predicate VARCHAR(100),'+\
-				 ' object VARCHAR(100));'
+				 ' subject TEXT,' + \
+				 ' predicate TEXT,'+\
+				 ' object TEXT);'
 		conn.execute(create)
 
 		print ("Table created successfully")
