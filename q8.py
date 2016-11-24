@@ -2,18 +2,15 @@ import sys
 import sqlite3
 
 '''
-Assuming that if a rdf format txt file is valid, 
-the delimator between triples are " .\n"
-the delimator between different prediactes are " ;\n\t"
-the delimator between different objects are " ,\n\t\t"
+Assuming that:
+if a rdf format txt file is valid, 
+then the periods, commas and semicolons, which are used to seperate statements,
+	are surrounded by one or more spaces/tabs. eg. " . " is a valid delimator
 for example, in Edmonton.txt
 '''
-SEMICOLON_DELIMATOR = ' ; '
-COMMA_DELIMATOR = ' ,   '
-PERIOD_DELIMATOR = ' . '
 
 def isValidPrefix(string):
-	stringList = string.split(' ')
+	stringList = string.split()
 	if not len(stringList)==3:
 		return False
 	if stringList[0]!='@prefix' and stringList[0]!='@base':
@@ -25,10 +22,10 @@ def isValidPrefix(string):
 	return True
 
 def splitBySemicolon(data):
-	tripleList = data.strip(' ').split(';')
+	tripleList = data.strip().split(';')
 	
 	# extract the subject
-	subject = tripleList[0].split(' ')[0] 
+	subject = tripleList[0].split()[0] 
 	
 	for i in range(1, len(tripleList)):
 		#insert the subject to make these become valid triple
@@ -36,11 +33,16 @@ def splitBySemicolon(data):
 
 	return tripleList
 
+
 def splitByComma(triple):
 	statements = []
+	triple = triple.replace(' , ','||||')
 
 	#print(triple)
-	nodes = triple.strip(' ').split()
+	nodes = triple.strip().split()
+
+	for i in range(0, len(nodes)):
+		nodes[i]=nodes[i].replace('||||',' , ')
 	#print(nodes)
 	# validate the triple data
 	while not len(nodes)==3:
@@ -63,14 +65,15 @@ def splitByComma(triple):
 				break
 			else:
 				# else, this is indeed an invalid triple				
-				print('Invalid triple data', triple)
+				print('Invalid triple data: did you miss any periods/commas/semicolons', triple)
 				sys.exit()
 
 	#print(nodes)
+	#print('nodes is: ', nodes)
 	# extract all three nodes of one triple data
 	subject = nodes[0]
 	predicate = nodes[1]
-	objects = nodes[2].split('，') # a list of all objects (used to be separated by commas)
+	objects = nodes[2].split(' , ') # a list of all objects (used to be separated by commas)
 	#print("Objects are: ", objects)
 
 	# to construct all complete triple statements, 
@@ -91,6 +94,7 @@ def splitByComma(triple):
 
 	#print("new statements:", statements)
 	#print(" ")
+	print('stmts is: ', statements)
 	return statements
 
 
@@ -121,21 +125,29 @@ def replacePrefix(prefixDict, statement):
 			outputStmt.append(node)
 		elif node[0]=='"' and node[-1]=='"':
 			# for string literals
-			outputStmt.append(node+'^^xsd:string')
+			outputStmt.append(node)
+			#outputStmt.append(node+'^^xsd:string')
 		elif node.isnumeric():
 			# for int
-			outputStmt.append('"'+node+'"^^xsd:integer')
+			outputStmt.append(node)
+			#outputStmt.append('"'+node+'"^^xsd:integer')
 		elif isfloat(node):
 			# for float/decimal
-			outputStmt.append('"'+node+'"^^xsd:decimal')
+			outputStmt.append(node)
+			#outputStmt.append('"'+node+'"^^xsd:decimal')
 		elif isLexical(node):
 			# for the lexical data types, store them directly
 			# "1904-10-08"^^xsd:date
 			# "53.53333282470703125"^^xsd:float
 			# "812201"^^xsd:nonNegativeInteger
-			outputStmt.append(node)
+			dataType = node[node.index(':')+1:]
+			if dataType=='float' or dataType=='nonNegativeInteger':
+				outputStmt.append(node[1:node.index('^^')-1])
+			else:
+				outputStmt.append(node)
 		elif isBoolean(node):
-			outputStmt.append('"'+node+'"^^xsd:boolean')
+			outputStmt.append(node)
+			#outputStmt.append('"'+node+'"^^xsd:boolean')
 		else:
 			# for prefixed nodes
 			nodeList = node.split(":")
@@ -146,7 +158,7 @@ def replacePrefix(prefixDict, statement):
 				else:
 					prefix = prefixDict[nodeList[0]]
 			except KeyError: 
-				print('Undocumentable prefix defination: ', nodeList[0])
+				print('Undefined prefix identifier: ', nodeList[0])
 				sys.exit()
 			outputStmt.append(prefix[:-1] + nodeList[1] + prefix[-1])
 	return outputStmt
@@ -176,34 +188,34 @@ def main(db, filename):
 	# possess the original file
 	with open(filename) as f:
 		for line in f:
-			line = line.rstrip('\n').split('\t')
+			line = line.replace('\t',' ').replace('\n', ' ').replace('\s',' ').strip()
+			print("new line is: ",line)
 			if line[-1]=='.' and line[-2]!=' ':
-				dataString+=line[:-1]
-				dataString+=' '
-				dataString+='. '
-			else:
-				queryStr+=line
+				line = line[:-1]+' . '
+			elif line[-1]==',' and line[-2]!=' ':
+				line = line[:-1]+' , '
 			dataString+=' '.join(line.rstrip('\n').split('\t')) # replace \n or \t with proper spaces
 			dataString+=' '
 	# now the original file is represented as a single string -- dataString
 
 	# replace the extra spaces remaining in the dataString
-	dataString = dataString.replace(SEMICOLON_DELIMATOR, ";")
-	dataString = dataString.replace(COMMA_DELIMATOR, "，")
-	#print(dataString)
+	#dataString = dataString.replace(' ; ', ";")
+	#dataString = dataString.replace(' ,   ', "||||")
+	print('datastring is: ', dataString)
 	# extract each triple/prefix from the dataString, and store them into a list
 	# each element of dataList is a prefix or a triple, 
 	# the last element should be discard because it's empty
-	dataList = dataString.split(PERIOD_DELIMATOR)[:-1] 
+	dataList = dataString.split(' . ')[:-1] 
 	#print('')
 	#print(dataList)
 
 	prefixList = {}
 	statements = []
 	for data in dataList:
+		data = data.strip()
 		if data[0]=='@': # store the prefix or base directives
 			if not isValidPrefix(data): # check for validity
-				print('Error: wrong format for prefix directive')
+				print('Wrong format for prefix defination')
 				sys.exit()
 			directives = data.split(' ')
 			prefixList[directives[1][:-1]] = directives[2] # store the prefix information to the dictionary

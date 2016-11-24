@@ -24,6 +24,10 @@ def main(db, filename):
 	for line in lines:
 		# for each line of the file
 		if isPrefix(line.strip()):
+			print(line.strip())
+			if not isValidPrefix(line.strip()):
+				print('prefix is not valid.')
+				sys.exit()
 			temp = line.split(':', 1) # temp == ['PREFIX rdf', ' <http://www.w3.org/1999/02/22-rdf-syntax-ns#>']
 			parts = temp[0].split() # parts == ['PREFIX', 'rdf']
 			parts.append(temp[1]) # parts == ['PREFIX', 'rdf', ' <http://www.w3.org/1999/02/22-rdf-syntax-ns#>']
@@ -70,7 +74,7 @@ def main(db, filename):
 		queryInOneVarStmt(conn, statements, var)
 
 	queryForRelations(conn, statements, queryVars, allVars)
-	#printResult(conn, queryVars)
+	printResult(conn, queryVars)
 	
 	conn.commit()
 	conn.close()
@@ -308,6 +312,24 @@ def isLexical(string):
 	else:
 		return False
 
+def possessLiteral(string):
+	if isLexical(string):
+		node = string[:string.index("^^")]
+		dataType = string[string.index(':')+1:]
+		if dataType=='integer':
+			return node
+	elif isLiteral(string):
+		node = string
+
+def isLiteral(node):
+	nodeList = node.split(":")
+	if isLexical(node):
+		return True
+	elif len(nodeList)==1 or (node[0]=='"' and node[-1]=='"'):
+		return True
+	else:
+		return False
+
 def replacePrefix(statements, prefixDict):
 	outputStmts = []
 	for statement in statements:
@@ -324,6 +346,8 @@ def replacePrefix(statements, prefixDict):
 				# "53.53333282470703125"^^xsd:float
 				# "812201"^^xsd:nonNegativeInteger
 				outputStmt.append(node)
+			elif isLiteral(node):
+				output.append(node)
 			else:
 				# for prefixed nodes
 				if node[0]!='<': # if the node is not a prefixed node, nor a literal
@@ -412,15 +436,6 @@ def isfloat(value):
 	except ValueError:
 		return False
 
-def isLiteral(node):
-	nodeList = node.split(":")
-	if isLexical(node):
-		return True
-	elif len(nodeList)==1 or (node[0]=='"' and node[-1]=='"'):
-		return True
-	else:
-		return False
-
 def isUri(string):
 	return (string[0]=='<' and string[-1]=='>')
 
@@ -429,6 +444,18 @@ def isPrefix(string):
 		return True
 	else:
 		return False
+
+def isValidPrefix(string):
+	stringList = string.split()
+	if not len(stringList)==3:
+		return False
+	if stringList[0]!='PREFIX':
+		return False
+	if stringList[1][-1]!=':':
+		return False
+	if stringList[2][0]!='<' or stringList[2][-1]!='>':
+		return False
+	return True
 
 def isVariable(string):
 	return (string[0]=='?')
@@ -444,11 +471,14 @@ def possessLines(lines):
 
 def printResult(conn, queryVars):
 	conn.commit()
-	conn.execute('SELECT * FROM result;')
+	cur = conn.cursor()
+	cur.execute('SELECT * FROM result;')
+	for row in cur:
+		print(row)
 	for var in queryVars:
 		drop = 'drop table %s;'%(var[1:])
-		conn.execute(drop)
-	conn.execute('drop table result')
+		cur.execute(drop)
+	cur.execute('drop table result')
 
 if __name__ == '__main__':
 
