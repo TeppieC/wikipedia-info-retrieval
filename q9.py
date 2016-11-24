@@ -68,6 +68,8 @@ def main(db, filename):
 	#createResultTable(conn, queryVars)
 	for var in queryVars:
 		queryInOneVarStmt(conn, statements, var)
+
+	queryForRelations(conn, statements, queryVars, allVars)
 	
 	conn.commit()
 	conn.close()
@@ -83,6 +85,26 @@ def createResultTable(conn, queryVars):
 		print ("Table created successfully")
 	except sqlite3.OperationalError as e:
 		print("Table already existed for the operation")
+
+def twoVarStmts(statements):
+	output = []
+	for stmt in statements:
+		if (stmt[0][0]=='?' and stmt[1][0]=='?') \
+			or (stmt[0][0]=='?' and stmt[2][0]=='?') \
+			or (stmt[1][0]=='?' and stmt[2][0]=='?'):
+			output.append(stmt)
+	for stmt in output:
+		index=-1
+		i = 0
+		for node in stmt:
+			if node[0]!='?':
+				print('node is :', node)
+				print(i)
+				index=i
+			i+=1
+		stmt.append(index)
+		print(stmt)
+	return output
 
 def isOneVarStmt(stmt, var):
 	'''
@@ -129,6 +151,36 @@ def oneVarQueryString(sub, pred, obj, varNode):
 	elif varNode=='object':
 		return "SELECT object FROM statement WHERE subject='%s' AND predicate='%s'"%(sub, pred)
 
+def twoVarWhereString(sub, pred, obj, varNode1, varNode2):
+	'''
+	return the string of a where clause for 2 given variables
+	'''
+	if varNode1=='subject' and varNode2=='predicate':
+		return "WHERE subject='%s' AND object='%s'"%(pred, obj)
+	elif varNode=='predicate':
+		return "SELECT predicate FROM statement WHERE subject='%s' AND object='%s'"%(sub, obj)
+	elif varNode=='object':
+		return "SELECT object FROM statement WHERE subject='%s' AND predicate='%s'"%(sub, pred)
+
+def twoVarWhereClause(sub, pred, obj, index):
+	if sub[0]=='?':
+		sub = sub[1:]
+	if pred[0]=='?':
+		pred = pred[1:]
+	if obj[0]=='?':
+		obj = obj[1:]
+	if index==-1:
+		return " WHERE subject=%s AND predicate=%s AND object=%s "%(sub,pred,obj)
+	else:
+		if index==0:
+			return " WHERE subject='%s' AND predicate=%s AND object=%s "%(sub,pred,obj)
+		elif index==1:
+			return " WHERE subject=%s AND predicate='%s' AND object=%s "%(sub,pred,obj)
+		else:
+			return " WHERE subject=%s AND predicate=%s AND object='%s' "%(sub,pred,obj)
+
+
+
 def queryInOneVarStmt(conn, statements, var):
 	'''
 	query in the database for a given variable -- var.
@@ -152,8 +204,50 @@ def queryInOneVarStmt(conn, statements, var):
 			insert_stmt += ' INTERSECT '
 			exce = True
 	if exce:
-		print(insert_stmt[:-11]+';') #.............................. may exceed
+		print(insert_stmt[:-11]+';')
 		conn.execute(insert_stmt[:-11]+';')
+	else:
+		insert_stmt+='select distinct subject from statement;'
+		print(insert_stmt)
+		conn.execute(insert_stmt)
+		insert_stmt = 'INSERT INTO %s '%(var[1:])
+		insert_stmt+='select distinct predicate from statement;'
+		conn.execute(insert_stmt)
+		insert_stmt = 'INSERT INTO %s '%(var[1:])
+		insert_stmt+='select distinct object from statement;'
+		conn.execute(insert_stmt)
+
+def concat(select_clause, from_tables, where_clause):
+	return select_clause+from_tables+where_clause
+
+def queryForRelations(conn, statements, queryVars, allVars):
+	createResultTable(conn, queryVars)
+	
+	select_variables = tuple(a[1:] for a in queryVars) # list comprehension for creating a tuple
+	select_clause = 'SELECT '+ '%s, '*len(queryVars)%select_variables
+	select_clause = select_clause[:-2]+' '
+	print('select is :', select_clause)
+
+	from_tables = tuple(a[1:] for a in allVars) # list comprehension for creating a tuple
+	from_clause = 'FROM '+ '%s, '*len(allVars)%from_tables
+	from_clause+='statement '
+	print('from is: ', from_clause)
+
+	insert_stmt = 'INSERT INTO result '
+	twoVarStatements = twoVarStmts(statements)
+	queryStr = ''
+	exce = False
+	for stmt in twoVarStatements:
+		where_clause = twoVarWhereClause(stmt[0], stmt[1], stmt[2], stmt[3])
+		print('where clause is:', where_clause)
+		queryStr+=concat(select_clause, from_clause, where_clause)
+		queryStr+=' INTERSECT '
+		exce = True
+
+	if exce:
+		print(insert_stmt + queryStr[:-11] + ';')
+		conn.execute(insert_stmt + queryStr[:-11] + ';')
+
 
 def validatePrefix(line):
 	pass
@@ -279,10 +373,9 @@ def replaceSpaceInStr(tripleStr):
 				and allNodes[i+1][0]!='"' and allNodes[i+1][-1]=='"':
 				allNodes[i] = allNodes[i]+'######'+allNodes[i+1]
 				allNodes.remove(allNodes[i+1])
-		except:
+		except IndexError:
 			pass
 	return ' '.join(allNodes)
-
 
 def replaceTripleStr(tripleStr):
 	tripleStr = replaceSpaceInStr(tripleStr)
