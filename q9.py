@@ -361,6 +361,7 @@ def replacePrefix(statements, prefixDict):
 							prefix = prefixDict[nodeList[0]]
 					except KeyError: 
 						print('Undocumentable prefix defination: ', nodeList[0])
+						print('Did you miss the @ identifier for prefix defination?')
 						sys.exit()
 					print(prefix)
 					print(nodeList)

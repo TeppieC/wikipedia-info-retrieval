@@ -1,23 +1,17 @@
-@prefix rdf:	<http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix dbr:	<http://dbpedia.org/resource/> .  
+@prefix rdf:	<http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix dbr: <http://dbpedia.org/resource/> .  
 @prefix yago:	<http://dbpedia.org/class/yago/>.
 dbr:Edmonton	rdf:type	yago:WikicatTownsInAlberta ,
-	yago:Town108665504 ,
+yago:Town108665504 ,
 	yago:GeographicalArea108574314.
 @prefix wikidata:	<http://www.wikidata.org/entity/> .
-dbr:Edmonton	rdf:type	wikidata:Q486972 ,
+dbr:Edmonton rdf:type	wikidata:Q486972 
+,
 		yago:Artifact100021939 ,
-		yago:Municipality108626283 .
+		yago:Municipality108626283
+		.
 @prefix dbo:	<http://dbpedia.org/ontology/> .
-dbr:Edmonton	rdf:type	dbo:City ,
-		dbo:PopulatedPlace ,
-		wikidata:Q515 ,
-		yago:AdministrativeDistrict108491826 ,
-		yago:Way104564698 ,
-		yago:WikicatRoadsInEdmonton ,
-		yago:PhysicalEntity100001930 ,
-		yago:Object100002684 ,
-		dbo:Settlement .
+dbr:Edmonton	rdf:type	dbo:City , dbo:PopulatedPlace , wikidata:Q515 , yago:AdministrativeDistrict108491826 , yago:Way104564698 , yago:WikicatRoadsInEdmonton , yago:PhysicalEntity100001930 , yago:Object100002684 , dbo:Settlement.
 @prefix umbel-rc:	<http://umbel.org/umbel/rc/> .
 dbr:Edmonton	rdf:type	umbel-rc:City ,
 		yago:WikicatPopulatedPlacesEstablishedIn1795 .
@@ -44,7 +38,7 @@ dbr:Edmonton	rdf:type	owl:Thing ,
 		yago:Site108651247 ,
 		yago:WikicatPopulatedPlacesEstablishedIn1904 ,
 		dbo:Location ,
-		umbel-rc:Village ;
+		umbel-rc:Village;
 	owl:sameAs	<http://yago-knowledge.org/resource/82_Street,_Edmonton> ,
 		<http://gadm.geovocab.org/id/3_14260> .
 @prefix dbpedia-cs:	<http://cs.dbpedia.org/resource/> .

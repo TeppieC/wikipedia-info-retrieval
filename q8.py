@@ -3,10 +3,11 @@ import sqlite3
 
 '''
 Assuming that:
-if a rdf format txt file is valid, 
-then the periods, commas and semicolons, which are used to seperate statements,
-	are surrounded by one or more spaces/tabs. eg. " . " is a valid delimator
-for example, in Edmonton.txt
+
+The periods, commas and semicolons, which are used to seperate statements,
+are surrounded by one or more spaces/tabs. eg. " . " is a valid delimator. For example, in Edmonton.txt
+Otherwise the commas/semicolons will be treated as the last character of the triple node.
+
 '''
 
 def isValidPrefix(string):
@@ -46,11 +47,14 @@ def splitByComma(triple):
 	#print(nodes)
 	# validate the triple data
 	while not len(nodes)==3:
+		if len(nodes)<3:
+			print('Invalid triple data')
+			sys.exit()
 		# special case for triple such as 'dbr:Edmonton dbp:leaderTitle "Governing body"@en'
 		# the resulting nodes list for this triple will be in length 4, 
 		# because space existed in the object as a literal string
 		# to fix this issue:
-		# 1. check if this length(>3) is resulting by spliting the spaces in literal strings
+		# check if this length(>3) is resulting by spliting the spaces in literal strings
 		# note that only literal strings can have spaces in themselves
 		for i in range(2, len(nodes)):
 			# for all possible extra nodes:
@@ -65,7 +69,7 @@ def splitByComma(triple):
 				break
 			else:
 				# else, this is indeed an invalid triple				
-				print('Invalid triple data: did you miss any periods/commas/semicolons', triple)
+				print('Invalid triple data: did you forget any periods/commas/semicolons/triple node?')
 				sys.exit()
 
 	#print(nodes)
@@ -152,6 +156,10 @@ def replacePrefix(prefixDict, statement):
 			# for prefixed nodes
 			nodeList = node.split(":")
 			prefix = ''
+			if not len(nodeList)==2:
+				print('Invalid triple node.')
+				print('Did you miss the colon?')
+				sys.exit()
 			try:
 				if nodeList[0]=='_': # for empty prefix
 					prefix = '<_/>'
@@ -159,6 +167,7 @@ def replacePrefix(prefixDict, statement):
 					prefix = prefixDict[nodeList[0]]
 			except KeyError: 
 				print('Undefined prefix identifier: ', nodeList[0])
+				print('Did you miss the @ identifier for prefix defination?')
 				sys.exit()
 			outputStmt.append(prefix[:-1] + nodeList[1] + prefix[-1])
 	return outputStmt
@@ -190,10 +199,13 @@ def main(db, filename):
 		for line in f:
 			line = line.replace('\t',' ').replace('\n', ' ').replace('\s',' ').strip()
 			print("new line is: ",line)
-			if line[-1]=='.' and line[-2]!=' ':
-				line = line[:-1]+' . '
-			elif line[-1]==',' and line[-2]!=' ':
-				line = line[:-1]+' , '
+			try:
+				if line[-1]=='.' and line[-2]!=' ':
+					line = line[:-1]+' . '
+				elif line[-1]==',' and line[-2]!=' ':
+					line = line[:-1]+' , '
+			except IndexError:
+				pass
 			dataString+=' '.join(line.rstrip('\n').split('\t')) # replace \n or \t with proper spaces
 			dataString+=' '
 	# now the original file is represented as a single string -- dataString
@@ -242,7 +254,7 @@ def main(db, filename):
 			conn.execute("INSERT INTO statement (id, subject, predicate, object) VALUES (?,?,?,?)", (id, statement[0], statement[1], statement[2]));
 			id+=1
 	except sqlite3.IntegrityError:
-		print('Data has already existed in the database./ Integrity Error: abort the commit.')
+		print('integrity error: Data has already existed in the database.')
 		conn.close()
 		sys.exit()
 
