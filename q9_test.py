@@ -5,6 +5,12 @@ import sqlite3
 # 1. the closing brace } will not be in the same line as the last statement.
 # 2. there will always be one SELECT ... WHERE statement in each query
 # 3. All statements should be end with a period, otherwise the program will report the error.
+
+
+#TODO:
+# put filter vars into query
+# extract query results in python, do the comparision in python
+
 def main(db, filename):
 
 	conn = sqlite3.connect(db)
@@ -94,6 +100,16 @@ def main(db, filename):
 	conn.commit()
 	conn.close()
 
+
+
+
+
+
+
+''' 
+	Helper functions to extract data from the .txt files 
+'''
+
 def clearSpaces(string):
 	return string.replace('\t',' ').replace('\n',' ').replace('\s',' ').strip()
 
@@ -118,6 +134,45 @@ def extractStatements(queryLines):
 		
 	return output
 
+def replacePrefix(statements, prefixDict):
+	outputStmts = []
+	for statement in statements:
+		outputStmt = []
+		for node in statement:
+			if isVariable(node):
+				outputStmt.append(node)
+			elif(node[0]=='<' and node[-1]=='>'):
+				# for pure uri's
+				outputStmt.append(node)
+			elif isLexical(node):
+				# for the lexical data types
+				# "1904-10-08"^^xsd:date
+				# "53.53333282470703125"^^xsd:float
+				# "812201"^^xsd:nonNegativeInteger
+				outputStmt.append(node[:node.index('^^')]) ##############################
+			elif isLiteral(node):
+				outputStmt.append(node)
+			else:
+				# for prefixed nodes
+				if node[0]!='<': # if the node is not a prefixed node, nor a literal
+					print('here:', node)
+					nodeList = node.split(":")
+					prefix = ''
+					try:
+						if nodeList[0]=='_': # for empty prefix
+							prefix = '<_/>'
+						else:
+							prefix = prefixDict[nodeList[0]]
+					except KeyError: 
+						print('Undocumentable prefix defination: ', nodeList[0])
+						print('Did you miss the @ identifier for prefix defination?')
+						sys.exit()
+					print(prefix)
+					print(nodeList)
+					outputStmt.append(prefix[:-1] + nodeList[1] + prefix[-1])
+		outputStmts.append(outputStmt)
+	return outputStmts
+
 def extractAllVariables(statements):
 	allVars = set()
 	for statement in statements:
@@ -140,112 +195,14 @@ def extractVariables(string):
 	# TODO: handle *
 	return variables
 
-def createResultTable(conn, queryVars):
-	variables = tuple(a[1:] for a in queryVars) # list comprehension for creating a tuple
-	createStmt = 'CREATE TABLE result( ' + '%s VARCHAR(100),'*len(queryVars)%variables
-	createStmt = createStmt[:-1]+');'
-	print(createStmt)
-	# create tables
-	try:
-		conn.execute(createStmt)
-		print ("Table created successfully")
-	except sqlite3.OperationalError as e:
-		print("Table already existed for the operation")
-
-def twoVarStmts(statements):
-	output = []
-	for stmt in statements:
-		if (stmt[0][0]=='?' and stmt[1][0]=='?') \
-			or (stmt[0][0]=='?' and stmt[2][0]=='?') \
-			or (stmt[1][0]=='?' and stmt[2][0]=='?'):
-			output.append(stmt)
-	for stmt in output:
-		index=-1
-		i = 0
-		for node in stmt:
-			if node[0]!='?':
-				print('node is :', node)
-				print(i)
-				index=i
-			i+=1
-		stmt.append(index)
-		print(stmt)
-	return output
-
-def isOneVarStmt(stmt, var):
-	'''
-	Return true if the stmt is a one-variable statement of var
-	otherwise false.
-	'''
-	nodeData = ''
-	i=0
-	#print('stmt is: ', stmt)
-	for node in stmt:
-		#print('node is: ', node)
-		if isVariable(node):
-			#print('is variable')
-			i+=1
-			nodeData = node
-			#print('nodeData is: ', nodeData)
-
-	#print('After: ')
-	#print(nodeData)
-	#print(var)
-	if i==1 and nodeData==var:
-		# if the given var occurs only once in the stmt
-		return True
-	else:
-		# if the given var is not in stmt, or the stmt contains 
-		# more than one variables
-		return False
-
-def stmtForVar(stmt, var):
-	nodeType = {0:'subject', 1:'predicate', 2:'object'}
-	#find whether the variable is a subject, predicate or object.
-	varNode = nodeType[stmt.index(var)] 
-	#print(varNode)
-	return oneVarQueryString(stmt[0], stmt[1], stmt[2], varNode)
-
-def oneVarQueryString(sub, pred, obj, varNode):
-	'''
-	return the string of a sqlite query for a given variable
-	'''
-	if varNode=='subject':
-		return "SELECT subject FROM statement WHERE predicate='%s' AND object='%s'"%(pred, obj)
-	elif varNode=='predicate':
-		return "SELECT predicate FROM statement WHERE subject='%s' AND object='%s'"%(sub, obj)
-	elif varNode=='object':
-		return "SELECT object FROM statement WHERE subject='%s' AND predicate='%s'"%(sub, pred)
-
-def twoVarWhereString(sub, pred, obj, varNode1, varNode2):
-	'''
-	return the string of a where clause for 2 given variables
-	'''
-	if varNode1=='subject' and varNode2=='predicate':
-		return "WHERE subject='%s' AND object='%s'"%(pred, obj)
-	elif varNode=='predicate':
-		return "SELECT predicate FROM statement WHERE subject='%s' AND object='%s'"%(sub, obj)
-	elif varNode=='object':
-		return "SELECT object FROM statement WHERE subject='%s' AND predicate='%s'"%(sub, pred)
-
-def twoVarWhereClause(sub, pred, obj, index):
-	if sub[0]=='?':
-		sub = sub[1:]
-	if pred[0]=='?':
-		pred = pred[1:]
-	if obj[0]=='?':
-		obj = obj[1:]
-	if index==-1:
-		return " WHERE subject=%s AND predicate=%s AND object=%s "%(sub,pred,obj)
-	else:
-		if index==0:
-			return " WHERE subject='%s' AND predicate=%s AND object=%s "%(sub,pred,obj)
-		elif index==1:
-			return " WHERE subject=%s AND predicate='%s' AND object=%s "%(sub,pred,obj)
-		else:
-			return " WHERE subject=%s AND predicate=%s AND object='%s' "%(sub,pred,obj)
 
 
+
+
+
+''' 
+	Query functions for statements with only 1 variable
+'''
 
 def queryInOneVarStmt(conn, statements, var):
 	'''
@@ -292,8 +249,63 @@ def queryInOneVarStmt(conn, statements, var):
 				insert_stmt+='select distinct object from statement;'
 				conn.execute(insert_stmt)
 
-def concat(select_clause, from_tables, where_clause):
-	return select_clause+from_tables+where_clause
+def isOneVarStmt(stmt, var):
+	'''
+	Return true if the stmt is a statement containing only one variable
+	'''
+	nodeData = ''
+	i=0
+	#print('stmt is: ', stmt)
+	for node in stmt:
+		#print('node is: ', node)
+		if isVariable(node):
+			#print('is variable')
+			i+=1
+			nodeData = node
+			#print('nodeData is: ', nodeData)
+
+	#print('After: ')
+	#print(nodeData)
+	#print(var)
+	if i==1 and nodeData==var:
+		# if the given var occurs only once in the stmt
+		return True
+	else:
+		# if the given var is not in stmt, or the stmt contains 
+		# more than one variables
+		return False
+
+def stmtForVar(stmt, var):
+	'''
+	return string of a sql statement querying for a variable, 
+	given one line statement containing this variable
+	'''
+	nodeType = {0:'subject', 1:'predicate', 2:'object'}
+	#find whether the variable is a subject, predicate or object.
+	varNode = nodeType[stmt.index(var)] 
+	#print(varNode)
+	return oneVarQueryString(stmt[0], stmt[1], stmt[2], varNode)
+
+def oneVarQueryString(sub, pred, obj, varNode):
+	'''
+	return the string of a sqlite query for a given variable
+	'''
+	if varNode=='subject':
+		return "SELECT subject FROM statement WHERE predicate='%s' AND object='%s'"%(pred, obj)
+	elif varNode=='predicate':
+		return "SELECT predicate FROM statement WHERE subject='%s' AND object='%s'"%(sub, obj)
+	elif varNode=='object':
+		return "SELECT object FROM statement WHERE subject='%s' AND predicate='%s'"%(sub, pred)
+
+
+
+
+
+
+
+''' 
+	Query functions for statements with more than 1 variables 
+'''
 
 def queryForRelations(conn, statements, queryVars, allVars):
 	createResultTable(conn, queryVars)
@@ -323,6 +335,59 @@ def queryForRelations(conn, statements, queryVars, allVars):
 		print(insert_stmt + queryStr[:-11] + ';')
 		conn.execute(insert_stmt + queryStr[:-11] + ';')
 
+def twoVarStmts(statements):
+	'''
+	return a list consisting of all statements which have two or more variables in it
+	'''
+	output = []
+	for stmt in statements:
+		if (stmt[0][0]=='?' and stmt[1][0]=='?') \
+			or (stmt[0][0]=='?' and stmt[2][0]=='?') \
+			or (stmt[1][0]=='?' and stmt[2][0]=='?'):
+			output.append(stmt)
+	for stmt in output:
+		index=-1
+		i = 0
+		for node in stmt:
+			if node[0]!='?':
+				print('node is :', node)
+				print(i)
+				index=i
+			i+=1
+		stmt.append(index)
+		print(stmt)
+	return output
+
+def twoVarWhereClause(sub, pred, obj, index):
+	if sub[0]=='?':
+		sub = sub[1:]
+	if pred[0]=='?':
+		pred = pred[1:]
+	if obj[0]=='?':
+		obj = obj[1:]
+	if index==-1:
+		return " WHERE subject=%s AND predicate=%s AND object=%s "%(sub,pred,obj)
+	else:
+		if index==0:
+			return " WHERE subject='%s' AND predicate=%s AND object=%s "%(sub,pred,obj)
+		elif index==1:
+			return " WHERE subject=%s AND predicate='%s' AND object=%s "%(sub,pred,obj)
+		else:
+			return " WHERE subject=%s AND predicate=%s AND object='%s' "%(sub,pred,obj)
+
+def concat(select_clause, from_tables, where_clause):
+	return select_clause+from_tables+where_clause
+
+
+
+
+
+
+
+'''
+	Helper functions to examine data-types and validate inputs
+'''
+
 def isValidQuery(string):
 	# no more than one occurance of {,},SELECT,WHERE
 	# SELECT occurs before WHERE
@@ -350,92 +415,17 @@ def isLexical(string):
 	else:
 		return False
 
-def possessLiteral(string):
-	if isLexical(string):
-		node = string[:string.index("^^")]
-		dataType = string[string.index(':')+1:]
-		if dataType=='integer':
-			return node
-	elif isLiteral(string):
-		node = string
-
 def isLiteral(node):
+	'''
+	determine if an input node is a literal
+	'''
 	nodeList = node.split(":")
 	if isLexical(node):
 		return True
-	elif len(nodeList)==1 or (node[0]=='"' and node[-1]=='"'):
+	elif len(nodeList)==1 and (node[0]=='"' and node[-1]=='"'):
 		return True
 	else:
 		return False
-
-def replacePrefix(statements, prefixDict):
-	outputStmts = []
-	for statement in statements:
-		outputStmt = []
-		for node in statement:
-			if isVariable(node):
-				outputStmt.append(node)
-			elif(node[0]=='<' and node[-1]=='>'):
-				# for pure uri's
-				outputStmt.append(node)
-			elif isLexical(node):
-				# for the lexical data types
-				# "1904-10-08"^^xsd:date
-				# "53.53333282470703125"^^xsd:float
-				# "812201"^^xsd:nonNegativeInteger
-				outputStmt.append(node)
-			elif isLiteral(node):
-				outputStmt.append(node)
-			else:
-				# for prefixed nodes
-				if node[0]!='<': # if the node is not a prefixed node, nor a literal
-					print('here:', node)
-					nodeList = node.split(":")
-					prefix = ''
-					try:
-						if nodeList[0]=='_': # for empty prefix
-							prefix = '<_/>'
-						else:
-							prefix = prefixDict[nodeList[0]]
-					except KeyError: 
-						print('Undocumentable prefix defination: ', nodeList[0])
-						print('Did you miss the @ identifier for prefix defination?')
-						sys.exit()
-					print(prefix)
-					print(nodeList)
-					outputStmt.append(prefix[:-1] + nodeList[1] + prefix[-1])
-		outputStmts.append(outputStmt)
-	return outputStmts
-
-def replaceSpaceInStr(tripleStr):
-	allNodes = tripleStr.split()
-	for i in range(0, len(allNodes)):
-		try:
-			if allNodes[i][0]=='"' and allNodes[i][-1]!='"' \
-				and allNodes[i+1][0]!='"' and allNodes[i+1][-1]=='"':
-				allNodes[i] = allNodes[i]+'######'+allNodes[i+1]
-				allNodes.remove(allNodes[i+1])
-		except IndexError:
-			pass
-	return ' '.join(allNodes)
-
-def replaceTripleStr(tripleStr):
-	tripleStr = replaceSpaceInStr(tripleStr)
-	print('hehehe', tripleStr)
-	allNodes = tripleStr.split()
-	for i in range(0, len(allNodes)):
-		node = allNodes[i]
-		if isUri(node):
-			print('AAAAAAAAAAAAAA URI', node)
-			node = node.replace('.', '/////')
-			node = node.replace(',', '$$$$$')
-			allNodes[i] = node
-		elif isfloat(node):
-			print('AAAAAAAAAAAAAA decimal/float', node)
-			node = node.replace('.', '/////')
-			allNodes[i] = node
-	print(allNodes)
-	return ' '.join(allNodes)
 
 def isfloat(value):
 	try:
@@ -468,14 +458,17 @@ def isValidPrefix(string):
 def isVariable(string):
 	return (string[0]=='?')
 
-def possessLines(lines):
-	string=''
-	for line in lines:
-		string+=line
-	string.replace('\t',' ')
-	string.replace('\s',' ')
-	string.replace('\n',' ')
-	return string
+def createResultTable(conn, queryVars):
+	variables = tuple(a[1:] for a in queryVars) # list comprehension for creating a tuple
+	createStmt = 'CREATE TABLE result( ' + '%s VARCHAR(100),'*len(queryVars)%variables
+	createStmt = createStmt[:-1]+');'
+	print(createStmt)
+	# create tables
+	try:
+		conn.execute(createStmt)
+		print ("Table created successfully")
+	except sqlite3.OperationalError as e:
+		print("Table already existed for the operation")
 
 def printResult(conn, queryVars):
 	conn.commit()
