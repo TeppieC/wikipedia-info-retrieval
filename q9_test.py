@@ -1,12 +1,25 @@
 import sys
 import sqlite3
 # There can be blank lines in the query file, consisting of zero or more space characters (e.g., \s or \t)
+# assume that 
+# 1. the closing brace } will not be in the same line as the last statement.
+# 2. there will always be one SELECT ... WHERE statement in each query
+# 3. All statements should be end with a period, otherwise the program will report the error.
 def main(db, filename):
 
 	conn = sqlite3.connect(db)
 	print ("Open database successfully")
 
+	# variables
 	lines = []
+	prefix = {}
+	queryStr = ''
+	queryLines = []
+	queryVars = []
+	allVars = []
+	triples = []
+	filters = []
+
 	# possess the original file
 	with open(filename) as f:
 		for line in f:
@@ -14,68 +27,64 @@ def main(db, filename):
 			if not l=='':
 				lines.append(l) # process the lines
 
-	prefix = {}
-	queryStr = ''
-	queryVars = []
-	allVars = []
-	triples = []
-
-	# extract data
+	braces = ['{','}']
+	start = False # a switch to determine if the line is a statement
+	# extract data from file
 	for line in lines:
-		# for each line of the file
-		if isPrefix(line.strip()): # extracting prefix definations
-			print(line.strip())
-			if not isValidPrefix(line.strip()):
-				print('prefix is not valid.')
-				sys.exit()
-			temp = line.split(':', 1) # temp == ['PREFIX rdf', ' <http://www.w3.org/1999/02/22-rdf-syntax-ns#>']
-			parts = temp[0].split() # parts == ['PREFIX', 'rdf']
-			parts.append(temp[1]) # parts == ['PREFIX', 'rdf', ' <http://www.w3.org/1999/02/22-rdf-syntax-ns#>']
-			prefix[parts[1].strip()] = parts[2].strip() #store the prefix
-		else:
-			if line[-1]=='.' and line[-2]!=' ':
-				queryStr+=line[:-1]
-				queryStr+=' '
-				queryStr+='. '
+		line = clearSpaces(line)
+		if line:
+			print('|'+line+'|')
+			# for each line of the file
+			if isPrefix(line): # extracting prefix definations
+				print(line)
+				if not isValidPrefix(line):
+					print('prefix is not valid.')
+					sys.exit()
+				temp = line.split(':', 1) # temp == ['PREFIX rdf', ' <http://www.w3.org/1999/02/22-rdf-syntax-ns#>']
+				parts = temp[0].split() # parts == ['PREFIX', 'rdf']
+				parts.append(temp[1]) # parts == ['PREFIX', 'rdf', ' <http://www.w3.org/1999/02/22-rdf-syntax-ns#>']
+				prefix[parts[1].strip()] = parts[2].strip() #store the prefix
 			else:
+				queryStr+=' '
 				queryStr+=line
+				if line[-1] in braces:
+					start = not start # toggle the switch
+					continue
+				if start:
+					queryLines.append(line)
 
-	for line in lines:
-		if 
-		line = line.strip()
-		if line[-1]!='.':
-			print('Missing period . at the end of the statement')
+	print(queryLines)
 
-	# possess the query string
-	queryStr.replace('\t',' ')
-	queryStr.replace('\s',' ')
-	queryStr.replace('\n',' ')
-	print('query string is: ', queryStr)
-
-	if not validateQuery(queryStr):
+	# validating the query
+	queryStr = clearSpaces(queryStr)
+	if not isValidQuery(queryStr):
 		print('Query not valid')
-		sys.exit()	
+		sys.exit()
+	print('query string is: ', queryStr)
 
 	for key, value in prefix.items():
 		print(key, value)
 
 	# extract all querying statements inside the braces
-	statements = extractStatements(queryStr)
+	[statements, filters] = extractStatements(queryLines)
 	print('statements', statements)
+	print('filters', filters)
+
 	statements = replacePrefix(statements, prefix)
 	print('full statements', statements)
 
 	# extracting all variables created in the query
 	allVars = extractAllVariables(statements)
-
+	print('allvars', allVars)
 	# extracting all querying variables
 	queryVars = extractVariables(queryStr)
 	print('queryVars', queryVars)
 	if queryVars[0]=='*':
 		queryVars = allVars
-
+	
+	
 	# create the result table
-	#createResultTable(conn, queryVars)
+	createResultTable(conn, queryVars)
 	for var in queryVars:
 		queryInOneVarStmt(conn, statements, var)
 
@@ -85,33 +94,28 @@ def main(db, filename):
 	conn.commit()
 	conn.close()
 
-def extractStatements(string):
-	start = string.index('{')+len('{')
-	end = string.index('}')
-	tripleStr = string[start:end].strip()
+def clearSpaces(string):
+	return string.replace('\t',' ').replace('\n',' ').replace('\s',' ').strip()
 
-	# possess the triple statements at first,
-	# in case that teh string is split on wrong locations
-	possessedTripleStr = replaceTripleStr(tripleStr)
-	print("possessed: ", possessedTripleStr)
+def isFilter(string):
+	return string[:6]=='FILTER'
 
-	triples = possessedTripleStr.split('.')
-	print(triples)
-	output = []
+def extractStatements(queryLines):
+	output = [[],[]]
+	for line in queryLines:
+		if not line[-1]=='.':
+			print('Need period after each line of the statements')
+			sys.exit()
 
-	for triple in triples:
-		lst = triple.split()
-		print('lst: ', lst)
-		if lst: # if is not an empty list(may caused by tailing spaces)
-			output.append(lst)
-	
-	for i in range(0, len(output)):
-		stmt = output[i]
-		for j in range(0, len(stmt)):
-			node = output[i][j]
-			output[i][j] = node.replace('/////', '.').replace('$$$$$', ',').replace('######',' ')
-			print('change back: ', output[i][j])
-	print(output)
+		line = line[:-1].strip()
+		if isFilter(line):
+			content = line[6:].strip()
+			output[1].append(content)
+			print('Filter is: ', content)
+		else:
+			triple = line.split()
+			output[0].append(triple)
+		
 	return output
 
 def extractAllVariables(statements):
@@ -319,11 +323,7 @@ def queryForRelations(conn, statements, queryVars, allVars):
 		print(insert_stmt + queryStr[:-11] + ';')
 		conn.execute(insert_stmt + queryStr[:-11] + ';')
 
-
-def validatePrefix(line):
-	pass
-
-def validateQuery(string):
+def isValidQuery(string):
 	# no more than one occurance of {,},SELECT,WHERE
 	# SELECT occurs before WHERE
 	# { occurs before }
@@ -385,7 +385,7 @@ def replacePrefix(statements, prefixDict):
 				# "812201"^^xsd:nonNegativeInteger
 				outputStmt.append(node)
 			elif isLiteral(node):
-				output.append(node)
+				outputStmt.append(node)
 			else:
 				# for prefixed nodes
 				if node[0]!='<': # if the node is not a prefixed node, nor a literal
@@ -448,7 +448,7 @@ def isUri(string):
 	return (string[0]=='<' and string[-1]=='>')
 
 def isPrefix(string):
-	if string.split(' ')[0]=='PREFIX':
+	if string.split()[0]=='PREFIX':
 		return True
 	else:
 		return False
