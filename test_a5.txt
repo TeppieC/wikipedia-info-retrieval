@@ -2,9 +2,8 @@ PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX schema: <http://schema.org/>
 PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX dbo: <http://dbpedia.org/ontology/>
-PREFIX foaf:	<http://xmlns.com/foaf/0.1/>
-SELECT ?city WHERE {
+SELECT ?city ?population  WHERE {
     ?city rdf:type schema:City .
-  	?city dbo:isPartOf dbr:Ontario .
-  	?city foaf:name "Toronto".
+  	?city dbo:populationTotal ?population. 
+  	FILTER (?population>='1000000') .
 } 

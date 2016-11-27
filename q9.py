@@ -5,12 +5,13 @@ import sqlite3
 # 1. the closing brace } will not be in the same line as the last statement.
 # 2. there will always be one SELECT ... WHERE statement in each query
 # 3. All statements should be end with a period, otherwise the program will report the error.
-# 4. All filter varaiables are within the querying variables.
+# 4. All filter varaiables are within the querying variables. ????????????????????????????????????????????????????????????
 
 
 #TODO:
 # put filter vars into query
 # extract query results in python, do the comparision in python
+hasTwoVarStmt = False
 
 def main(db, filename):
 
@@ -96,6 +97,10 @@ def main(db, filename):
 		queryInOneVarStmt(conn, statements, var)
 
 	queryForRelations(conn, statements, queryVars, allVars)
+	if not hasTwoVarStmt:
+		print('No statements has more than 1 variable')
+		queryOnlyOneVar(conn, queryVars, allVars)
+
 	result = printResultWithoutFilter(conn)
 	filtering(filters, result)
 	dropTables(conn, allVars)
@@ -105,7 +110,25 @@ def main(db, filename):
 	conn.close()
 
 
+def queryOnlyOneVar(conn, queryVars, allVars):
+	'''
+	If there is no statement with more than one variables,
+	cartesian product the tables of each querying variable and insert into result table
+	'''
+	select_variables = tuple(a[1:] for a in queryVars) # list comprehension for creating a tuple
+	select_clause = 'SELECT distinct '+ '%s, '*len(queryVars)%select_variables
+	select_clause = select_clause[:-2]+' '
 
+	from_tables = tuple(a[1:] for a in allVars) # list comprehension for creating a tuple
+	from_clause = 'FROM '+ '%s, '*len(allVars)%from_tables
+	from_clause+='statement '
+
+	queryStr = concat(select_clause, from_clause, ';')
+
+	insert_stmt = 'INSERT INTO result '
+
+	print(insert_stmt + queryStr)
+	conn.execute(insert_stmt + queryStr)
 
 
 
@@ -312,25 +335,27 @@ def oneVarQueryString(sub, pred, obj, varNode):
 '''
 
 def queryForRelations(conn, statements, queryVars, allVars):
-	createResultTable(conn, queryVars)
 	
 	select_variables = tuple(a[1:] for a in queryVars) # list comprehension for creating a tuple
 	select_clause = 'SELECT '+ '%s, '*len(queryVars)%select_variables
 	select_clause = select_clause[:-2]+' '
-	print('select is :', select_clause)
+	#print('select is :', select_clause)
 
 	from_tables = tuple(a[1:] for a in allVars) # list comprehension for creating a tuple
 	from_clause = 'FROM '+ '%s, '*len(allVars)%from_tables
 	from_clause+='statement '
-	print('from is: ', from_clause)
+	#print('from is: ', from_clause)
 
 	insert_stmt = 'INSERT INTO result '
-	twoVarStatements = twoVarStmts(statements)
+	twoVarStatements = twoVarStmts(statements) # get all statements with more than 1 variables
+	if twoVarStatements:
+		hasTwoVarStmt = True
+
 	queryStr = ''
 	exce = False
 	for stmt in twoVarStatements:
 		where_clause = twoVarWhereClause(stmt[0], stmt[1], stmt[2], stmt[3])
-		print('where clause is:', where_clause)
+		#print('where clause is:', where_clause)
 		queryStr+=concat(select_clause, from_clause, where_clause)
 		queryStr+=' INTERSECT '
 		exce = True
@@ -349,6 +374,13 @@ def twoVarStmts(statements):
 			or (stmt[0][0]=='?' and stmt[2][0]=='?') \
 			or (stmt[1][0]=='?' and stmt[2][0]=='?'):
 			output.append(stmt)
+
+	# to find which of the 3 places of this statement
+	# is not a variable to query
+	# index==-1 if the statement consists of 3 variables
+	# index==0 if the subject of the statement is not a variable
+	# index==1 if the predicate of the statement is not a variable
+	# index==2 if the object of the statement is not a variable
 	for stmt in output:
 		index=-1
 		i = 0
@@ -495,8 +527,11 @@ def filtering(filters, result):
 		print(f)
 
 	print('Temporary results')
+	count = 0
 	for row in result:
 		print(row)
+		count+=1
+	print(count, ' results')
 
 	for filterStmt in filters:
 		if isNumericFilter(filterStmt):
