@@ -1,10 +1,11 @@
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX schema: <http://schema.org/>
 PREFIX dbr: <http://dbpedia.org/resource/>
-SELECT ?airport ?city WHERE {
-  ?airport rdf:type dbo:Airport.
-  ?city dbo:country dbr:Canada.
-  ?airport dbo:city ?city.
-  ?airport dbo:owner dbr:Transport_Canada.
+PREFIX dbo: <http://dbpedia.org/ontology/>
+
+PREFIX foaf:	<http://xmlns.com/foaf/0.1/>
+SELECT ?city WHERE {
+    ?city rdf:type schema:City .
+  	?city dbo:isPartOf dbr:Alberta.
+  	?city foaf:name "Calgary" .
 } 

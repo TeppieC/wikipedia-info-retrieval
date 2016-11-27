@@ -2,14 +2,8 @@ PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX schema: <http://schema.org/>
 PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX dbo: <http://dbpedia.org/ontology/>
-SELECT ?city ?title WHERE {
+SELECT ?city  WHERE {
     ?city rdf:type schema:City .
-  	?city dbo:country <http://dbpedia.org/resource/Canada> .
-  	<http://dbpedia.org/resource/Edmonton> ?title "Mayor"^^xsd:string	.
-  	<http://www.dbpedia.org/resource/Edmonton> ?title "Mayor 2" .
-  	
-  	<http://www.dbpedia.org/resource/Edmon,_ton> ?title "Mayor,".
-  	
-  	<http://dbpedia.org/resource/Edmonton> ?title 2.4.
- 
+  	?city dbo:populationTotal ?population. 
+  	FILTER (?population>='1000000') .
 } 
