@@ -11,7 +11,7 @@ import sqlite3
 #TODO:
 # put filter vars into query
 # extract query results in python, do the comparision in python
-hasTwoVarStmt = False
+global hasTwoVarStmt
 
 def main(db, filename):
 
@@ -27,6 +27,7 @@ def main(db, filename):
 	allVars = []
 	triples = []
 	filters = []
+	hasTwoVarStmt = False
 
 	# possess the original file
 	with open(filename) as f:
@@ -108,27 +109,6 @@ def main(db, filename):
 
 	conn.commit()
 	conn.close()
-
-
-def queryOnlyOneVar(conn, queryVars, allVars):
-	'''
-	If there is no statement with more than one variables,
-	cartesian product the tables of each querying variable and insert into result table
-	'''
-	select_variables = tuple(a[1:] for a in queryVars) # list comprehension for creating a tuple
-	select_clause = 'SELECT distinct '+ '%s, '*len(queryVars)%select_variables
-	select_clause = select_clause[:-2]+' '
-
-	from_tables = tuple(a[1:] for a in allVars) # list comprehension for creating a tuple
-	from_clause = 'FROM '+ '%s, '*len(allVars)%from_tables
-	from_clause+='statement '
-
-	queryStr = concat(select_clause, from_clause, ';')
-
-	insert_stmt = 'INSERT INTO result '
-
-	print(insert_stmt + queryStr)
-	conn.execute(insert_stmt + queryStr)
 
 
 
@@ -325,6 +305,32 @@ def oneVarQueryString(sub, pred, obj, varNode):
 		return "SELECT object FROM statement WHERE subject='%s' AND predicate='%s'"%(sub, pred)
 
 
+def queryOnlyOneVar(conn, queryVars, allVars):
+	'''
+	If there is no statement with more than one variables,
+	cartesian product the tables of each querying variable and insert into result table
+	'''
+	select_variables = tuple(a[1:] for a in queryVars) # list comprehension for creating a tuple
+	select_clause = 'SELECT distinct '+ '%s, '*len(queryVars)%select_variables
+	select_clause = select_clause[:-2]+' '
+
+	from_tables = tuple(a[1:] for a in allVars) # list comprehension for creating a tuple
+	from_clause = 'FROM '+ '%s, '*len(allVars)%from_tables
+	from_clause+='statement '
+
+	queryStr = concat(select_clause, from_clause, ';')
+
+	insert_stmt = 'INSERT INTO result '
+
+	print(insert_stmt + queryStr)
+	conn.execute(insert_stmt + queryStr)
+
+
+
+
+
+
+
 
 
 
@@ -348,7 +354,9 @@ def queryForRelations(conn, statements, queryVars, allVars):
 
 	insert_stmt = 'INSERT INTO result '
 	twoVarStatements = twoVarStmts(statements) # get all statements with more than 1 variables
-	if twoVarStatements:
+	print('has %d  two var stmts'%(len(twoVarStatements)))
+	if len(twoVarStatements):
+		print(hasTwoVarStmt)
 		hasTwoVarStmt = True
 
 	queryStr = ''
