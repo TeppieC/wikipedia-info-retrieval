@@ -27,6 +27,7 @@ def main(db, filename):
 	allVars = []
 	triples = []
 	filters = []
+	global hasTwoVarStmt
 	hasTwoVarStmt = False
 
 	# possess the original file
@@ -355,6 +356,8 @@ def queryForRelations(conn, statements, queryVars, allVars):
 	insert_stmt = 'INSERT INTO result '
 	twoVarStatements = twoVarStmts(statements) # get all statements with more than 1 variables
 	print('has %d  two var stmts'%(len(twoVarStatements)))
+
+	global hasTwoVarStmt
 	if len(twoVarStatements):
 		print(hasTwoVarStmt)
 		hasTwoVarStmt = True
