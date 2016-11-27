@@ -2,8 +2,24 @@ PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX schema: <http://schema.org/>
 PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX dbo: <http://dbpedia.org/ontology/>
-SELECT ?city ?population  WHERE {
+PREFIX foaf:	<http://xmlns.com/foaf/0.1/>
+SELECT ?city ?population ?name WHERE {
     ?city rdf:type schema:City .
   	?city dbo:populationTotal ?population. 
-  	FILTER (?population>='1000000') .
+
+  	?city foaf:name ?name.
+
+  	FILTER (?population>="1000000") .
+
+  	FILTER ( ?population>="1000000" ) .
+
+  	FILTER (?population >= "1000000") .
+
+  	FILTER ( ?population >= "50000" ) .
+
+  	FILTER(?population >= "1000000") .
+
+  	FILTER (regex( ?name,"TorO") ) .
+  	FILTER ( regex( ?name,"t") ) .
+  	FILTER (regex( ?name,"r") ) .
 } 

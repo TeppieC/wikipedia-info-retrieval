@@ -190,7 +190,9 @@ def main(db, filename):
 		print ("Table created successfully")
 
 	except sqlite3.OperationalError as e:
-		print(e)
+		print('Table already existed in the database.')
+		print('Please remove it before re-running this program')
+		sys.exit()
 
 	dataList = []
 	dataString = ''

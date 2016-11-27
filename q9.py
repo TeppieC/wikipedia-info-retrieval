@@ -2,15 +2,20 @@ import sys
 import sqlite3
 # There can be blank lines in the query file, consisting of zero or more space characters (e.g., \s or \t)
 # assume that 
-# 1. the closing brace } will not be in the same line as the last statement.
-# 2. there will always be one SELECT ... WHERE statement in each query
-# 3. All statements should be end with a period, otherwise the program will report the error.
-# 4. All filter varaiables are within the querying variables. ????????????????????????????????????????????????????????????
+# 0. All assumptions listed in the assignment3 requirement.
+# 1. All lines should only consist of a statement or a filter
+#		eg. the closing brace } will not be in the same line as the last statement.
+# 2. All keywords in the provided query file should be in upper case. eg. SELECT or WHERE or FILTER
+# 3. All statements should end with a period, otherwise the program will report the error
+# 4. All numeric filters will only perform on variables which are of numeric types(int/float/decimal)
+#		If a filter is performed on a non-numeric typed varaible, error will be prompt
+# 4. All filter varaiables are within the querying variables. ??????????????????????????????????????TODO
+# 5. All literals given in the filter has to 
+#		eg. FILTER (?number = "10") . where 10 is of a numeric type (int)
+#			FILTER (regex(?v, "<text>")) where <text> is a string to be matched
+# 6. All variables should be named with only one question mark, followed by alphabetic characters/digits
 
 
-#TODO:
-# put filter vars into query
-# extract query results in python, do the comparision in python
 global hasTwoVarStmt
 
 def main(db, filename):
@@ -78,6 +83,7 @@ def main(db, filename):
 	# extract all querying statements inside the braces
 	[statements, filters] = extractStatements(queryLines)
 	print('statements', statements)
+	[numFilters, regFilters] = extractFilters(filters)
 	print('filters', filters)
 
 	statements = replacePrefix(statements, prefix)
@@ -104,12 +110,20 @@ def main(db, filename):
 		queryOnlyOneVar(conn, queryVars, allVars)
 
 	result = printResultWithoutFilter(conn)
-	filtering(filters, result)
+	filtering(conn, numFilters, regFilters, result, allVars, queryVars)
 	dropTables(conn, allVars)
 
 
 	conn.commit()
 	conn.close()
+
+
+
+
+
+
+
+
 
 
 
@@ -134,7 +148,7 @@ def extractStatements(queryLines):
 		line = line[:-1].strip()
 		if isFilter(line):
 			content = line[6:].strip()
-			output[1].append(content)
+			output[1].append(content[1:-1])
 			print('Filter is: ', content)
 		else:
 			triple = line.split()
@@ -172,7 +186,7 @@ def replacePrefix(statements, prefixDict):
 						else:
 							prefix = prefixDict[nodeList[0]]
 					except KeyError: 
-						print('Undocumentable prefix defination: ', nodeList[0])
+						print('Undocumented prefix defination: ', nodeList[0])
 						print('Did you miss the @ identifier for prefix defination?')
 						sys.exit()
 					print(prefix)
@@ -194,6 +208,10 @@ def extractVariables(string):
 	start = string.index('SELECT')+len('SELECT')
 	end = string.index('WHERE')
 	variableStr = string[start:end].strip()
+	for char in variableStr:
+		if not (char==' ' or char.isalpha() or char=='?'):
+			print('Invalid variables to select: ', variableStr)
+			sys.exit()
 	variables = variableStr.split()
 	# validating
 	for var in variables:
@@ -202,6 +220,60 @@ def extractVariables(string):
 			sys.exit()
 	# TODO: handle *
 	return variables
+
+def extractFilters(filters):
+	'''
+	assume that all filters are in the form of FILTER(?var<="number") or FILTER(?var,<text>)
+	'''
+	output = [[],[]]
+	for filt in filters:
+		filt = filt.strip()
+		if isRegexFilter(filt):
+			print('|'+filt+'|')
+			filterVar = filt[filt.index('?'):filt.index(',')].strip()
+			matchString = filt[filt.index('"')+1:-2].strip()
+			output[1].append((filterVar, matchString))
+
+		elif isNumericFilter(filt):
+			if not filt[0]=='?':
+				print('Wrong format of filter: ', filt)
+				sys.exit()
+			index = 1
+			for char in filt[1:]:
+				if char.isalpha():
+					index+=1
+			filterVar = filt[:index].strip()
+			indexLiteral = filt.index('"')
+			literal = filt[indexLiteral+1:-1].strip()
+			operator = filt[index:indexLiteral].strip()
+			if not operator in ['<=','>=','=','!=','>','<']:
+				print('Invalid operator for numeric filters: ', operator)
+				sys.exit()
+			if not isNumeric(literal):
+				print('Need numeric literals for numeric filters: ', literal)
+				sys.exit()
+
+			output[0].append((filterVar, operator, literal))
+		else:
+			print('Invalid filter statement: ', filt)
+			print('Filters should be in either the two following forms:')
+			print('FILTER (?number >= "10") or  FILTER (regex(?variable, "<text>"))')
+
+	return output
+
+def isNumeric(string):
+	if string.isnumeric():
+		return True
+	elif string[0]=='-' and string[1:].isnumeric():
+		return True
+	elif isfloat(string):
+		return True
+	else:
+		return False
+
+
+
+
 
 
 
@@ -530,12 +602,8 @@ def printResultWithoutFilter(conn):
 		output.append(list(row))
 	return output
 
-def filtering(filters, result):
+def filtering(conn, numFilters, regFilters, result, allVars, queryVars):
 	print('Filtering the result')
-
-	print('Filters')
-	for f in filters:
-		print(f)
 
 	print('Temporary results')
 	count = 0
@@ -544,17 +612,90 @@ def filtering(filters, result):
 		count+=1
 	print(count, ' results')
 
-	for filterStmt in filters:
-		if isNumericFilter(filterStmt):
-			pass
-		elif isRegexFilter(filterStmt):
-			pass
+	#output = []
+	print('Filters')
+	for f in numFilters:
+		filterResult = []
+		print(f)
+		var = f[0][1:]
+		op = f[1]
+		num = float(f[2])
+		index = queryVars.index(f[0])
+		for row in result:
+			compareCol = row[index]
+			if isNumeric(compareCol):
+				compareCol = float(compareCol)
+				print('compares: ', compareCol,' with ', num, 'operator:', op)
+				if op=='=':
+					if compareCol==num:
+						filterResult.append(row)
+				elif op=='>':
+					if compareCol>num:
+						filterResult.append(row)
+				elif op=='<':
+					if compareCol<num:
+						filterResult.append(row)
+				elif op=='>=':
+					if compareCol>=num:
+						filterResult.append(row)
+				elif op=='<=':
+					if compareCol<=num:
+						filterResult.append(row)
+				elif op=='!=':
+					if not compareCol==num:
+						filterResult.append(row)
+				else:
+					print('Invalid operator: ', op)
+					dropTables(conn, allVars)
+					sys.exit()
+			else:
+				print('Wrong type of variable: ', '?'+queryVars[index])
+				print('The variable should be in numeric types, in order to perform numeric filtering')
+		#output = filterResult
+		result = filterResult
 
-def isNumericFilter(stmt):
+
+	for f in regFilters:
+		filterResult = []
+		print(f)
+		var = f[0][1:]
+		string = f[1]
+		index = queryVars.index(f[0])
+		for row in result:
+			compareCol = row[index]
+			print('compares: ', compareCol,' with ', string)
+			if string.lower() in compareCol.lower():
+				filterResult.append(row)
+		result = filterResult
+
+
+	print('Final results')
+	count = 0
+	for row in result:
+		print(row)
+		count+=1
+	print(count, ' results')
+
+def isNumericFilter(filt):
+	'''
+	return if given string filt is a numeric filter
+	'''
+	# extracted filters should be in the form of: ?number = "10"
+	# TODO
+
 	return True
 
-def isRegexFilter(stmt):
-	return True
+def isRegexFilter(filt):
+	'''
+	return if given string filt is a regex filter
+	'''
+
+	# extracted filters should be in the form of: regex(?v, "<text>")
+	# TODO: validate
+	if filt[:5]=='regex':
+		return True
+	else:
+		return False
 
 def dropTables(conn, allVars):
 	cur = conn.cursor()
