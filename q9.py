@@ -86,6 +86,12 @@ def main(db, filename):
 	print('statements', statements)
 	[numFilters, regFilters] = extractFilters(filters)
 	print('filters', filters)
+	filterVars = set()
+	for filterStmt in numFilters:
+		filterVars.add(filterStmt[0])
+	for filterStmt in regFilters:
+		filterVars.add(filterStmt[0])
+	print('filterVars, ', filterVars)
 
 	statements = replacePrefix(statements, prefix)
 	print('full statements', statements)
@@ -95,9 +101,18 @@ def main(db, filename):
 	print('allvars', allVars)
 	# extracting all querying variables
 	queryVars = extractVariables(queryStr)
-	print('queryVars', queryVars)
 	if queryVars[0]=='*':
 		queryVars = allVars
+
+	resultVars = queryVars
+	resultCols = len(resultVars)
+	print('resultVars', resultVars)
+	print('# of cols:', resultCols)
+
+	for var in filterVars:
+		if var not in queryVars:
+			queryVars.append(var)
+	print('queryVars', queryVars)
 	
 	
 	# create the result table
@@ -111,7 +126,7 @@ def main(db, filename):
 		queryOnlyOneVar(conn, queryVars, allVars)
 
 	result = printResultWithoutFilter(conn)
-	filtering(conn, numFilters, regFilters, result, allVars, queryVars)
+	filtering(conn, numFilters, regFilters, result, queryVars, resultCols)
 	dropTables(conn, allVars)
 
 
@@ -603,7 +618,7 @@ def printResultWithoutFilter(conn):
 		output.append(list(row))
 	return output
 
-def filtering(conn, numFilters, regFilters, result, allVars, queryVars):
+def filtering(conn, numFilters, regFilters, result, queryVars, resultCols):
 	print('Filtering the result')
 
 	print('Temporary results')
@@ -673,7 +688,7 @@ def filtering(conn, numFilters, regFilters, result, allVars, queryVars):
 	print('Final results')
 	count = 0
 	for row in result:
-		print(row)
+		print(row[:resultCols])
 		count+=1
 	print(count, ' results')
 
