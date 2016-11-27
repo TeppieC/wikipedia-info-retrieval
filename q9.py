@@ -14,6 +14,7 @@ import sqlite3
 #		eg. FILTER (?number = "10") . where 10 is of a numeric type (int)
 #			FILTER (regex(?v, "<text>")) where <text> is a string to be matched
 # 6. All variables should be named with only one question mark, followed by alphabetic characters/digits
+# 7. We assume that the database is in the same schema of q8.py, please see README.txt or q6.txt for details
 
 
 global hasTwoVarStmt

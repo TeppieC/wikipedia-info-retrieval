@@ -29,6 +29,7 @@ FOR q9:
 name the table as "statement"? is that okay? okay
 return value should be in which form? For example:<http://dbpedia.org/resource/Edmonton>? okay
 
+Q8部分测试结果
 1. ,之前必须有间隔
 2. 删掉statement中的某一项不行
 3. 多加一个标点； 若是comma，就是少一项。若是period，就当做前一项的数据
