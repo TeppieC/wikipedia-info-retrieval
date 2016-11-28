@@ -57,8 +57,16 @@ and up to two sequential apostrophes ('').''' .
 6. 在确认一下literal的存储方法, string/float/decimal/date/boolean/integer
 7. 确认一下boolean
 
+Q9TODO:
+1. handle lexical literal cases
+2. handle date/...
+3. to meet all assumptions
+4. check if absolute iri works??
+5. 若select中出现了where里面没有的variable,throw error
+6. assume that the variable in the filters would appear at least once in the statements inside the where clause
+
 TODO:
-1. 写readme，标注一下怎么run
+1. 写readme，介绍一下数据库的构成，罗列一下Q8/9中的各种assumption，介绍一下命名，标注一下怎么run
 2. 写q6/7
 3. 编写一个Q8/9测试集(用于submit)，可以从cities.txt修改
 4. 测试Q8/9的稳定性  ***（重要）
@@ -68,6 +76,9 @@ TODO:
 		0) 基础情况：有*/不是所有variable都要select等等等等
 		1) 许多许多variables
 		2) 多个不同的filter
+		很多空行/tab和\n混用等
+		PREFIX的格式错误能不能detect
+		{}的位置， 关键字的位置
 		3) 同一个variable有多个不同种类的filter，可能filter相互矛盾
 		4) 任意加减SELECT, prefix等关键字，逗号，句号，增减node的数量等等，这个要发挥想象力了。。
 		5) 修改一些地方，制造明显的错误，保证程序会报错，也得发挥想象力。。。
