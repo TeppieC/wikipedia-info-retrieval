@@ -26,7 +26,7 @@ def isValidPrefix(string):
 	return True
 
 def splitBySemicolon(data):
-	tripleList = data.strip().split(';')
+	tripleList = data.strip().split(' ;')
 	
 	# extract the subject
 	subject = tripleList[0].split()[0] 
@@ -237,8 +237,8 @@ def main(db, filename):
 					line = line[:-1]+' . '
 				elif line[-1]==',' and line[-2]!=' ':
 					line = line[:-1]+' , '
-				#elif line[-1]==';' and line[-2]!=' ':
-				#	line = line[:-1]+' ; '
+				elif line[-1]==';' and line[-2]!=' ':
+					line = line[:-1]+' ; '
 			except IndexError:
 				pass
 			dataString+=' '.join(line.rstrip('\n').split('\t')) # replace \n or \t with proper spaces
