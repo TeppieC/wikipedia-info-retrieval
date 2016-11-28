@@ -8,6 +8,8 @@ The periods, commas and semicolons, which are used to seperate statements,
 are surrounded by one or more spaces/tabs. eg. " . " is a valid delimator. For example, in Edmonton.txt
 Otherwise the commas/semicolons will be treated as the last character of the triple node.
 
+Please remove all comments(start with #) in the txt file before running. 
+
 '''
 
 def isValidPrefix(string):
@@ -38,18 +40,24 @@ def splitBySemicolon(data):
 
 def splitByComma(triple):
 	statements = []
-	triple = triple.replace(' , ','||||')
-
-	#print(triple)
+	### To handle different input types, when doing the spliting based on white spaces
+	### 	If comma is closely followed each object, replace them with &&&&
+	###		If comma is followed with one space after one object, replace them with ||||
+	print('Triple before replacing, after split by semicolon: ', triple)
+	triple = triple.replace(' , ', '||||').replace(', ', '&&&&')
+	print('Triple after replacing: ', triple)
+	# Do the split based on white spaces
 	nodes = triple.strip().split()
 
+	# change the characters back
 	for i in range(0, len(nodes)):
-		nodes[i]=nodes[i].replace('||||',' , ')
+		nodes[i]=nodes[i].replace('||||', ' , ').replace('&&&&', ', ')
 	#print(nodes)
+	print('Nodes list generated: ', nodes)
 	# validate the triple data
 	while not len(nodes)==3:
 		if len(nodes)<3:
-			print('Invalid triple data')
+			print('Invalid triple data: ', nodes)
 			sys.exit()
 		# special case for triple such as 'dbr:Edmonton dbp:leaderTitle "Governing body"@en'
 		# the resulting nodes list for this triple will be in length 4, 
@@ -58,6 +66,7 @@ def splitByComma(triple):
 		# check if this length(>3) is resulting by spliting the spaces in literal strings
 		# note that only literal strings can have spaces in themselves
 		for i in range(2, len(nodes)):
+			print('Looping inside the while loop')
 			# for all possible extra nodes:
 			if nodes[i].count('"')%2==1:
 				#print("triggered")
@@ -70,7 +79,7 @@ def splitByComma(triple):
 				break
 			else:
 				# else, this is indeed an invalid triple				
-				print('Invalid triple data: did you forget any periods/commas/semicolons/triple node?')
+				print('Invalid triple data: did you forget any periods/commas/semicolons/triple node?', nodes)
 				sys.exit()
 
 	#print(nodes)
@@ -78,12 +87,18 @@ def splitByComma(triple):
 	# extract all three nodes of one triple data
 	subject = nodes[0]
 	predicate = nodes[1]
+	print('Objects string before spliting by comma is: ', nodes[2])
 	objects = nodes[2].split(' , ') # a list of all objects (used to be separated by commas)
+
+	#for obj in objects:
+	#	if obj.count('"')%2==1:
+	#		objects = 
 	#print("Objects are: ", objects)
 
 	# to construct all complete triple statements, 
 	#  by correspond each obj in the objects list to the subject&predicates
 	for obj in objects:
+		print('Objects list extracted: ', objects)
 		try: 
 			if obj[-3:]=='@en': # deal with the language tag with @en at the end	
 				statements.append([subject,predicate,obj[:-3]])
@@ -94,12 +109,12 @@ def splitByComma(triple):
 			# those cases are common cases, without language tags, leave it to the next line
 			pass
 
-		statements.append([subject,predicate,obj]) # deal with the other(common) cases without language tags
+		statements.append([subject,predicate,obj]) # deal with the other(common) cases, without language tags
 		#print("new statements appended: ", [subject,predicate,obj])
 
 	#print("new statements:", statements)
 	#print(" ")
-	print('stmts is: ', statements)
+	print('Statements list generated: ', statements)
 	return statements
 
 
@@ -124,14 +139,16 @@ def isLexical(string):
 
 def replacePrefix(prefixDict, statement, hasEmptyPrefix, hasBase, base):
 	outputStmt = []
+	print('Statement is: ',statement)
 	for node in statement:
+		print('----Node is: ', node)
 		if(node[0]=='<' and node[-1]=='>'):
 			if not hasBase:
 				# for absolute iris
 				outputStmt.append(node)
 			else:
-				outputStmt.append('<'+base[1:-1]+node+'>')
-				print('after prefix with base:|', '<'+base[1:-1]+node+'>', '|')
+				outputStmt.append('<'+base[1][1:-1]+node[1:-1]+'>')
+				print('after prefix with base:|', '<'+base[1][1:-1]+node[1:-1]+'>', '|')
 		elif node=='a':
 			outputStmt.append('<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>')
 		elif node[0]=='"' and node[-1]=='"':
@@ -170,8 +187,9 @@ def replacePrefix(prefixDict, statement, hasEmptyPrefix, hasBase, base):
 					:subject5 :predicate5 :object5 .        # prefixed name, e.g. http://another.example/subject5
 					'''
 					outputStmt.append('')
-				print('Invalid triple node.')
-				print('Did you miss the colon?')
+				#print('h|', node)
+				print('Invalid triple node:', nodeList)
+				print('Did you miss the colon between?')
 				sys.exit()
 			try:
 				if nodeList[0]=='_': # for empty prefix
@@ -219,6 +237,8 @@ def main(db, filename):
 					line = line[:-1]+' . '
 				elif line[-1]==',' and line[-2]!=' ':
 					line = line[:-1]+' , '
+				#elif line[-1]==';' and line[-2]!=' ':
+				#	line = line[:-1]+' ; '
 			except IndexError:
 				pass
 			dataString+=' '.join(line.rstrip('\n').split('\t')) # replace \n or \t with proper spaces
@@ -228,36 +248,43 @@ def main(db, filename):
 	# replace the extra spaces remaining in the dataString
 	#dataString = dataString.replace(' ; ', ";")
 	#dataString = dataString.replace(' ,   ', "||||")
-	print('datastring is: ', dataString)
+	#dataString = dataString.replace(', ',' , ').replace('  , ',' , ')
+	#print('datastring is: ', dataString)
 
 	while True:
-		i = dataString.index('PREFIX')
-		if i==0:
+		try:
+			i = dataString.index('PREFIX')
+			#print('index is:',i)
+		except ValueError:
 			break
 		subStr1 = dataString[:i]
 		subStr2 = dataString[i:]
+		subStr2 = subStr2.replace('PREFIX','@prefix')
 		j = subStr2.index('>')
 		subStr2 = subStr2[:j+1]+' .'+subStr2[j+1:]
 		dataString = subStr1+subStr2
-		print('datastring is: ', dataString)
+		#print('datastring is: ', dataString)
 
 	while True:
-		i = dataString.index('BASE')
-		if i==0:
+		try:
+			i = dataString.index('PREFIX')
+			#print('index is:',i)
+		except ValueError:
 			break
 		subStr1 = dataString[:i]
 		subStr2 = dataString[i:]
 		j = subStr2.index('>')
 		subStr2 = subStr2[:j+1].strip()+' .'+subStr2[j+1:]
 		dataString = subStr1+subStr2
-		print('datastring is: ', dataString)
+		#print('datastring is: ', dataString)
 
+	print('Final datastring is: ', dataString)
 	# extract each triple/prefix from the dataString, and store them into a list
 	# each element of dataList is a prefix or a triple, 
 	# the last element should be discard because it's empty
 	dataList = dataString.split(' . ')[:-1]
 	#print('')
-	#print(dataList)
+	print('Final datalist is: ', dataList)
 
 	prefixList = {}
 	base = []
@@ -266,27 +293,33 @@ def main(db, filename):
 	statements = []
 	for data in dataList:
 		data = data.strip()
-		if data[0]=='@prefix' or data[0]=='PREFIX': # store the prefix or base directives
+		if data[0:7]=='@prefix' or data[0:6]=='PREFIX': # store the prefix or base directives
 			if not isValidPrefix(data): # check for validity
 				print('Wrong format for prefix defination')
 				sys.exit()
 			directives = data.split()
 			prefixList[directives[1][:-1]] = directives[2] # store the prefix information to the dictionary
-		elif data[0]=='@base' or data[0]=='BASE':
+			#print('prefix')
+		elif data[0:5]=='@base' or data[0:4]=='BASE':
 			hasBase = True
 			base = data.split()
 			print('base is:', base)
 		else: # store the triple data
+			print('&&&&&&&&&&& split by semicolon &&&&&&&&&&&&')
 			tripleList = splitBySemicolon(data)
+			print('^^^^^^^^^^^^^ split by comma ^^^^^^^^^^^^^^^')
+			print('Triple List is: ',tripleList)
 			#print(tripleList)
 			for triple in tripleList:
-				statements += splitByComma(triple)
+				statements+=splitByComma(triple)
 
 	'''
 	for prefix,value in prefixList.items():
 		print(prefix)
 		print(value)
 	'''
+	print('-------------------Replacing prefixes---------------------')
+	print('Final statements List is: ', statements)
 	statementsNew = []
 	for statement in statements:
 		#print(statement)
@@ -296,7 +329,7 @@ def main(db, filename):
 	id = 0
 	try:
 		for statement in statementsNew:
-			conn.execute("INSERT INTO statement (id, subject, predicate, object) VALUES (?,?,?,?)", (id, statement[0], statement[1], statement[2]));
+			conn.execute("INSERT INTO statement (id, subject, predicate, object) VALUES (?,?,?,?)", (id, statement[0], statement[1], statement[2]))
 			id+=1
 	except sqlite3.IntegrityError:
 		print('integrity error: Data has already existed in the database.')

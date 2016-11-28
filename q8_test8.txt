@@ -1,0 +1,23 @@
+<http://one.example/subject1> <http://one.example/predicate1> <http://one.example/object1> .
+
+@base <http://one.example/> .
+<subject2> <predicate2> <object2> . 
+
+BASE <http://one.example/>
+<subject2> <predicate2> <object2> . 
+
+@prefix p: <http://two.example/> .
+p:subject3 p:predicate3 p:object3 . 
+
+PREFIX p: <http://two.example/>
+p:subject3 p:predicate3 p:object3 . 
+
+@prefix p: <path/> .
+p:subject4 p:predicate4 p:object4 .
+
+@prefix : <http://another.example/> .
+:subject5 :predicate5 :object5 .
+
+:subject6 a :subject7 .
+
+<http://伝言.example/?user=أكرم&amp;channel=R%26D> a :subject8 .
