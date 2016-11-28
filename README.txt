@@ -35,6 +35,27 @@ Q8部分测试结果
 3. 多加一个标点； 若是comma，就是少一项。若是period，就当做前一项的数据
 4. :后面没东西，不算是错误。
 
+Q8的TODO：
+1. 处理@base/BASE/PREFIX
+2. 处理a
+3. 处理prefix没名字的情况
+@prefix : <http://another.example/> .    # empty prefix
+:subject5 :predicate5 :object5 .        # prefixed name, e.g. http://another.example/subject5
+
+:subject6 a :subject7 .                 # same as :subject6 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> :subject7 .
+@prefix : <http://example.org/elements> .                                                                              
+<http://en.wikipedia.org/wiki/Helium>                                                                                  
+    :atomicNumber 2 ;               # xsd:integer                                                                      
+    :atomicMass 4.002602 ;          # xsd:decimal                                                                      
+    :specificGravity 1.663E-4 .     # xsd:double      
+
+4. 处理<http://example.org/#spiderman> <http://xmlns.com/foaf/0.1/name> "Человек-паук"@ru .
+5. 处理multiple line
+show:218 show:blurb '''This is a multi-line                        # literal with embedded new lines and quotes
+literal with many quotes (""""")
+and up to two sequential apostrophes ('').''' .
+6. 在确认一下literal的存储方法, string/float/decimal/date/boolean/integer
+7. 确认一下boolean
 
 TODO:
 1. 写readme，标注一下怎么run
