@@ -14,7 +14,8 @@ def isValidPrefix(string):
 	stringList = string.split()
 	if not len(stringList)==3:
 		return False
-	if stringList[0]!='@prefix' and stringList[0]!='@base':
+	if stringList[0]!='@prefix' and stringList[0]!='@base'\
+		and stringList[0]!='PREFIX' and stringList[0]!='BASE':
 		return False
 	if stringList[1][-1]!=':':
 		return False
@@ -121,12 +122,18 @@ def isLexical(string):
 	else:
 		return False
 
-def replacePrefix(prefixDict, statement):
+def replacePrefix(prefixDict, statement, hasEmptyPrefix, hasBase, base):
 	outputStmt = []
 	for node in statement:
 		if(node[0]=='<' and node[-1]=='>'):
-			# for pure uri's
-			outputStmt.append(node)
+			if not hasBase:
+				# for absolute iris
+				outputStmt.append(node)
+			else:
+				outputStmt.append('<'+base[1:-1]+node+'>')
+				print('after prefix with base:|', '<'+base[1:-1]+node+'>', '|')
+		elif node=='a':
+			outputStmt.append('<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>')
 		elif node[0]=='"' and node[-1]=='"':
 			# for string literals
 			outputStmt.append(node)
@@ -157,6 +164,12 @@ def replacePrefix(prefixDict, statement):
 			nodeList = node.split(":")
 			prefix = ''
 			if not len(nodeList)==2:
+				if node[0]==':' and hasEmptyPrefix:
+					'''
+					@prefix : <http://another.example/> .    # empty prefix
+					:subject5 :predicate5 :object5 .        # prefixed name, e.g. http://another.example/subject5
+					'''
+					outputStmt.append('')
 				print('Invalid triple node.')
 				print('Did you miss the colon?')
 				sys.exit()
@@ -216,23 +229,53 @@ def main(db, filename):
 	#dataString = dataString.replace(' ; ', ";")
 	#dataString = dataString.replace(' ,   ', "||||")
 	print('datastring is: ', dataString)
+
+	while True:
+		i = dataString.index('PREFIX')
+		if i==0:
+			break
+		subStr1 = dataString[:i]
+		subStr2 = dataString[i:]
+		j = subStr2.index('>')
+		subStr2 = subStr2[:j+1]+' .'+subStr2[j+1:]
+		dataString = subStr1+subStr2
+		print('datastring is: ', dataString)
+
+	while True:
+		i = dataString.index('BASE')
+		if i==0:
+			break
+		subStr1 = dataString[:i]
+		subStr2 = dataString[i:]
+		j = subStr2.index('>')
+		subStr2 = subStr2[:j+1].strip()+' .'+subStr2[j+1:]
+		dataString = subStr1+subStr2
+		print('datastring is: ', dataString)
+
 	# extract each triple/prefix from the dataString, and store them into a list
 	# each element of dataList is a prefix or a triple, 
 	# the last element should be discard because it's empty
-	dataList = dataString.split(' . ')[:-1] 
+	dataList = dataString.split(' . ')[:-1]
 	#print('')
 	#print(dataList)
 
 	prefixList = {}
+	base = []
+	hasEmptyPrefix = False
+	hasBase = False
 	statements = []
 	for data in dataList:
 		data = data.strip()
-		if data[0]=='@': # store the prefix or base directives
+		if data[0]=='@prefix' or data[0]=='PREFIX': # store the prefix or base directives
 			if not isValidPrefix(data): # check for validity
 				print('Wrong format for prefix defination')
 				sys.exit()
-			directives = data.split(' ')
+			directives = data.split()
 			prefixList[directives[1][:-1]] = directives[2] # store the prefix information to the dictionary
+		elif data[0]=='@base' or data[0]=='BASE':
+			hasBase = True
+			base = data.split()
+			print('base is:', base)
 		else: # store the triple data
 			tripleList = splitBySemicolon(data)
 			#print(tripleList)
@@ -247,7 +290,7 @@ def main(db, filename):
 	statementsNew = []
 	for statement in statements:
 		#print(statement)
-		statementsNew.append(replacePrefix(prefixList, statement))
+		statementsNew.append(replacePrefix(prefixList, statement, hasEmptyPrefix, hasBase, base))
 
 	''' Inserting into database '''
 	id = 0
