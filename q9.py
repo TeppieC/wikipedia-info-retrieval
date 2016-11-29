@@ -105,7 +105,14 @@ def main(db, filename):
 	queryVars = extractVariables(queryStr)
 	if queryVars[0]=='*':
 		queryVars = allVars
+	for var in queryVars:
+		if not var in allVars:
+			print('Selecting variables that is not existed: ', var)
+			dropTables(conn, allVars)
+			sys.exit()
 
+	# adding the filtering variables into query variables
+	# even though we dont need to display them ,they need to be queried
 	resultVars = queryVars
 	resultCols = len(resultVars)
 	print('resultVars', resultVars)
@@ -128,9 +135,11 @@ def main(db, filename):
 		print('No statements has more than 1 variable')
 		queryOnlyOneVar(conn, queryVars, allVars)
 
-	result = printResultWithoutFilter(conn)
+	result = queryResultBeforeFilter(conn)
 	if filters:
 		filtering(conn, numFilters, regFilters, result, queryVars, resultCols)
+	else:
+		printResultWithoutFilter(conn, queryVars)
 	dropTables(conn, allVars)
 
 
@@ -609,18 +618,34 @@ def createResultTable(conn, queryVars):
 	except sqlite3.OperationalError as e:
 		print("Table already existed for the operation")
 
-def printResultWithoutFilter(conn):
+def queryResultBeforeFilter(conn):
 	'''
 	return the result after querying the database without any filtering
 	'''
-	conn.commit()
+	#conn.commit()
 	cur = conn.cursor()
 	cur.execute('SELECT * FROM result;')
 	output = []
 	for row in cur:
-		print(row)
+		#print(row)
 		output.append(list(row))
 	return output
+
+def printResultWithoutFilter(conn, queryVars):
+	'''
+	print the result without any filtering
+	'''
+	#conn.commit()
+	cur = conn.cursor()
+	print('#'*30)
+	print('Result')
+	cur.execute('SELECT * FROM result;')
+	count = 0
+	print('|     %s     |'*len(queryVars)%tuple(queryVars))
+	for row in cur:
+		print(row)
+		count+=1
+	print('%d results'%count)
 
 def filtering(conn, numFilters, regFilters, result, queryVars, resultCols):
 	print('Filtering the result')
@@ -683,13 +708,15 @@ def filtering(conn, numFilters, regFilters, result, queryVars, resultCols):
 		index = queryVars.index(f[0])
 		for row in result:
 			compareCol = row[index]
-			print('compares: ', compareCol,' with ', string)
+			#print('compares: ', compareCol,' with ', string)
 			if string.lower() in compareCol.lower():
 				filterResult.append(row)
 		result = filterResult
 
 
-	print('Final results')
+	print('#'*30)
+	print('Result')
+	print('|   %s   |'*resultCols%tuple(queryVars)[:resultCols])
 	count = 0
 	for row in result:
 		print(row[:resultCols])
@@ -719,10 +746,13 @@ def isRegexFilter(filt):
 
 def dropTables(conn, allVars):
 	cur = conn.cursor()
-	for var in allVars:
-		drop = 'drop table %s;'%(var[1:])
-		cur.execute(drop)
-	cur.execute('drop table result')
+	try:
+		for var in allVars:
+			drop = 'drop table %s;'%(var[1:])
+			cur.execute(drop)
+		cur.execute('drop table result')
+	except sqlite3.OperationalError:
+		pass
 
 if __name__ == '__main__':
 
