@@ -5,5 +5,5 @@ PREFIX dbo: <http://dbpedia.org/ontology/>
 SELECT * WHERE {
     	?city rdf:type schema:City .
   	?city 			<http://dbpedia.org/ontology/leaderTitle> ?title . 
-  	FILTER (?city='10') .
-  	} 
+  	FILTER(?city="10") .
+  	  	} 

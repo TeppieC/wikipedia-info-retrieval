@@ -84,14 +84,16 @@ def main(db, filename):
 	# extract all querying statements inside the braces
 	[statements, filters] = extractStatements(queryLines)
 	print('statements', statements)
-	[numFilters, regFilters] = extractFilters(filters)
 	print('filters', filters)
-	filterVars = set()
-	for filterStmt in numFilters:
-		filterVars.add(filterStmt[0])
-	for filterStmt in regFilters:
-		filterVars.add(filterStmt[0])
-	print('filterVars, ', filterVars)
+	if filters:
+		[numFilters, regFilters] = extractFilters(filters)
+		print('filters', filters)
+		filterVars = set()
+		for filterStmt in numFilters:
+			filterVars.add(filterStmt[0])
+		for filterStmt in regFilters:
+			filterVars.add(filterStmt[0])
+		print('filterVars, ', filterVars)
 
 	statements = replacePrefix(statements, prefix)
 	print('full statements', statements)
@@ -109,10 +111,11 @@ def main(db, filename):
 	print('resultVars', resultVars)
 	print('# of cols:', resultCols)
 
-	for var in filterVars:
-		if var not in queryVars:
-			queryVars.append(var)
-	print('queryVars', queryVars)
+	if filters:
+		for var in filterVars:
+			if var not in queryVars:
+				queryVars.append(var)
+		print('queryVars', queryVars)
 	
 	
 	# create the result table
@@ -126,7 +129,8 @@ def main(db, filename):
 		queryOnlyOneVar(conn, queryVars, allVars)
 
 	result = printResultWithoutFilter(conn)
-	filtering(conn, numFilters, regFilters, result, queryVars, resultCols)
+	if filters:
+		filtering(conn, numFilters, regFilters, result, queryVars, resultCols)
 	dropTables(conn, allVars)
 
 
@@ -225,7 +229,7 @@ def extractVariables(string):
 	end = string.index('WHERE')
 	variableStr = string[start:end].strip()
 	for char in variableStr:
-		if not (char==' ' or char.isalpha() or char=='?'):
+		if not (char==' ' or char.isalpha() or char=='?' or char=='*'):
 			print('Invalid variables to select: ', variableStr)
 			sys.exit()
 	variables = variableStr.split()
@@ -614,7 +618,7 @@ def printResultWithoutFilter(conn):
 	cur.execute('SELECT * FROM result;')
 	output = []
 	for row in cur:
-		#print(row)
+		print(row)
 		output.append(list(row))
 	return output
 
@@ -665,7 +669,7 @@ def filtering(conn, numFilters, regFilters, result, queryVars, resultCols):
 					dropTables(conn, allVars)
 					sys.exit()
 			else:
-				print('Wrong type of variable: ', '?'+queryVars[index])
+				print('Wrong type of variable: ', queryVars[index])
 				print('The variable should be in numeric types, in order to perform numeric filtering')
 		#output = filterResult
 		result = filterResult
