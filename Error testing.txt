@@ -1,0 +1,14 @@
+Error testing:
+
+2. input a not exist file -- open file error
+4. FILTER: >= 1 (integer without " ")
+5. missing ")" in FILTER
+6. FILERT(?xx > "10") but nerver search for xx before
+7. extra words after WHERE: if WHERE, invlid; if other words, qury works(but should not)
+8. q5: missing ")" in FILTER
+9. 是否考虑 ? city
+10. query之后多了一个 "." 可以检查出来但是报错不对是否影响？
+11. 
+
+1. test_a2 error line 419 -> done!
+3. SELECT (empty) WHERE .. -> done!
