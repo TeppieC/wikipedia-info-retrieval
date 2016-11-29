@@ -111,8 +111,6 @@ def main(db, filename):
 					sys.exit()
 				temp = line.split(':', 1) # temp == ['PREFIX rdf', ' <http://www.w3.org/1999/02/22-rdf-syntax-ns#>']
 				if temp[0].strip()=='PREFIX' and len(temp)==2: # e.g line == PREFIX : <http://dbpedia.org/ontology/>
-					#hasEmptyPrefix = True
-					#emptyPrefix = temp[1].strip()
 					prefix[' '] = temp[1].strip()
 					continue
 				parts = temp[0].split() # parts == ['PREFIX', 'rdf']
@@ -136,9 +134,6 @@ def main(db, filename):
 		sys.exit()
 	print('query string is: ', queryStr)
 
-	#for key, value in prefix.items():
-	#	print(key, value)
-
 	# extract all querying statements inside the braces
 	[statements, filters] = extractStatements(queryLines)
 	print('statements', statements)
@@ -161,6 +156,11 @@ def main(db, filename):
 	print('allvars', allVars)
 	# extracting all querying variables
 	queryVars = extractVariables(queryStr)
+	if not queryVars:
+		print('You need to query variables')
+		dropTables(conn, allVars)
+		sys.exit()
+
 	if queryVars[0]=='*':
 		queryVars = allVars
 	for var in queryVars:
@@ -258,7 +258,7 @@ def replacePrefix(statements, prefixDict):
 				# "1904-10-08"^^xsd:date
 				# "53.53333282470703125"^^xsd:float
 				# "812201"^^xsd:nonNegativeInteger
-				outputStmt.append(node[:node.index('^^')]) ##############################
+				outputStmt.append(node[:node.index('^^')])
 			elif isLiteral(node):
 				outputStmt.append(node)
 			else:
@@ -307,7 +307,6 @@ def extractVariables(string):
 		if not (var[0]=='?' or var=='*'):
 			print('Invalid format for variables to query')
 			sys.exit()
-	# TODO: handle *
 	return variables
 
 def extractFilters(filters):
@@ -424,18 +423,11 @@ def isOneVarStmt(stmt, var):
 	'''
 	nodeData = ''
 	i=0
-	#print('stmt is: ', stmt)
 	for node in stmt:
-		#print('node is: ', node)
 		if isVariable(node):
-			#print('is variable')
 			i+=1
 			nodeData = node
-			#print('nodeData is: ', nodeData)
-
-	#print('After: ')
-	#print(nodeData)
-	#print(var)
+			
 	if i==1 and nodeData==var:
 		# if the given var occurs only once in the stmt
 		return True
@@ -452,7 +444,6 @@ def stmtForVar(stmt, var):
 	nodeType = {0:'subject', 1:'predicate', 2:'object'}
 	#find whether the variable is a subject, predicate or object.
 	varNode = nodeType[stmt.index(var)] 
-	#print(varNode)
 	return oneVarQueryString(stmt[0], stmt[1], stmt[2], varNode)
 
 def oneVarQueryString(sub, pred, obj, varNode):
@@ -507,12 +498,10 @@ def queryForRelations(conn, statements, queryVars, allVars):
 	select_variables = tuple(a[1:] for a in queryVars) # list comprehension for creating a tuple
 	select_clause = 'SELECT '+ '%s, '*len(queryVars)%select_variables
 	select_clause = select_clause[:-2]+' '
-	#print('select is :', select_clause)
 
 	from_tables = tuple(a[1:] for a in allVars) # list comprehension for creating a tuple
 	from_clause = 'FROM '+ '%s, '*len(allVars)%from_tables
 	from_clause+='statement '
-	#print('from is: ', from_clause)
 
 	insert_stmt = 'INSERT INTO result '
 	twoVarStatements = twoVarStmts(statements) # get all statements with more than 1 variables
@@ -527,7 +516,6 @@ def queryForRelations(conn, statements, queryVars, allVars):
 	exce = False
 	for stmt in twoVarStatements:
 		where_clause = twoVarWhereClause(stmt[0], stmt[1], stmt[2], stmt[3])
-		#print('where clause is:', where_clause)
 		queryStr+=concat(select_clause, from_clause, where_clause)
 		queryStr+=' INTERSECT '
 		exce = True
@@ -787,7 +775,6 @@ def isNumericFilter(filt):
 	return if given string filt is a numeric filter
 	'''
 	# extracted filters should be in the form of: ?number = "10"
-	# TODO
 	if (">=" in filt) or \
 		("<=" in filt) or \
 		("=" in filt) or \
