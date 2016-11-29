@@ -1,7 +1,11 @@
 import sys
 import sqlite3
-# There can be blank lines in the query file, consisting of zero or more space characters (e.g., \s or \t)
-# assume that 
+
+
+'''
+The table we used to store RDF data is called 'statement'
+
+# Assume that 
 # 0. All assumptions listed in the assignment3 requirement.
 # 1. All lines should only consist of a statement or a filter
 #		eg. the closing brace } will not be in the same line as the last statement.
@@ -17,28 +21,59 @@ import sqlite3
 # 8. All literals would be within double quotes, no matter which data type it is. (This is the one from the requirements page)
 #		e.g  ?city dbo:populationTotal "1000000". ---- the object "1000000" will be considered as a numeric/int type by the program afterwards 
 
-'''
-test cases:
-run with cities.db
+Glossary:
 
-1.
+1. statements: are the lines inside WHERE clause of the pattern: subj1 pred1 obj1 .
+	One line is one statement
+
+2. triples: are the list of directives inside one statement. e.g [subj1, pred1, obj1] is a triple
+
+3. varaible: the directives/identifiers which has a questionmark at the beginning. e.g ?city
+
+4. one-variable-statement: the statement which has only one variable inside. The other two are prefixed nodes/literals
+	aka. oneVarStmt
+	e.g ?city rdf:type schema:City .
+
+5. two-var-statement: the statement which has more than one(upto 3) variables inside.
+	e.g ?city rdf:type ?schema .
+
+6. filter variable: the variable which appears in the FILTER clause
+
+
+Work flow of our program:
+
+example:
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX schema: <http://schema.org/>
 PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX dbo: <http://dbpedia.org/ontology/>
 PREFIX foaf:	<http://xmlns.com/foaf/0.1/>
-SELECT ?city WHERE {
+SELECT ?city  WHERE {
     ?city rdf:type schema:City .
-  	?city dbo:isPartOf dbr:Ontario .
-  	?city foaf:name "Toronto".
+  	?city dbo:populationTotal ?population. 
+  	FILTER ( ?population >= "50000" ) .
 } 
 
-2.
+1. Extract all information from the query file. 
 
+2. Create tables in the database, one table for each variable in the query file.
+	e.g This will create tables named: city, population
 
+3. Update the tables, by inserting into the data queried from all one-var-statements.
+	e.g INSERT INTO city SELECT subject FROM statement WHERE predicate='rdf:type' and object='schema:city' 
+		INSERT INTO population SELECT object FROM statement --just for example
+
+4. Create one table for result, the colums are all varaibles appear in the SELECT clause, plus all filter varaibles.
+	e.g CREATE TABLE result(...) the columns are city,population
+
+5. Update the result table, from the table storing the RDF data and all tables created in step 2. The query will base
+	on all two-var-statements. 
+	e.g INSERT INTO result SELECT subject,object FROM city,population,statement WHERE predicate='dbo:populationTotal'
+
+6. Once the result table is filled, apply filtering in python. Print the final result after filtering.
 '''
-global hasTwoVarStmt
 
+global hasTwoVarStmt # To handle special case: when there is no two variable statements.
 def main(db, filename):
 
 	conn = sqlite3.connect(db)
@@ -55,8 +90,6 @@ def main(db, filename):
 	filters = []
 	global hasTwoVarStmt
 	hasTwoVarStmt = False
-	#hasEmptyPrefix = False
-	#emptyPrefix = ''
 
 	# possess the original file
 	with open(filename) as f:
@@ -71,10 +104,8 @@ def main(db, filename):
 	for line in lines:
 		line = clearSpaces(line)
 		if line:
-			#print('|'+line+'|')
 			# for each line of the file
 			if isPrefix(line): # extracting prefix definations
-				#print(line)
 				if not isValidPrefix(line):
 					print('prefix is not valid.')
 					sys.exit()

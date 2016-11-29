@@ -2,16 +2,25 @@ import sys
 import sqlite3
 
 '''
-Assuming that:
+Run with the command: python3 q8.py <name_of_db>.db <name_of_rdf>.txt
 
-The periods, commas and semicolons, which are used to seperate statements,
-are surrounded by one or more spaces/tabs. eg. " . " is a valid delimator. For example, in Edmonton.txt
-Otherwise the commas/semicolons will be treated as the last character of the triple node.
+1. Assume that the input file is in the same format as the examples 
+from https://www.w3.org/TR/turtle/ up to section 2.6 or Edmonton.txt
 
-Please remove all comments(start with #) in the txt file before running. 
+2. Please remove all comments(start with #) in the txt file before running. 
 
-blank node _:a will be stored as <a> in the database
+3. blank node _:a will be stored as <a> in the database
 
+4. The relational database schema is described in q6.txt
+
+5. We dealt with the datatypes of integer/string/float/decimal. 
+	The strings would be stored with double quotes.
+	The int/float/decimal would be stored without double quotes.
+	The other types would be stored in a lexical form. e.g "1904-10-08"^^xsd:date
+	The data in other languages other than English would be ignored.
+
+6. We handled all errors that we could thought of. The update would not be commited 
+	if an error occurs. The program would shut down and give appropriate prompt on error.
 '''
 
 def isValidPrefix(string):
@@ -42,18 +51,30 @@ def splitBySemicolon(data):
 
 def splitByComma(triple):
 	statements = []
-	### To handle different input types, when doing the spliting based on white spaces
+	### Special case: To handle different input types, when doing the spliting based on white spaces
 	### 	If comma is closely followed each object, replace them with &&&&
 	###		If comma is followed with one space after one object, replace them with ||||
 	print('Triple before replacing, after split by semicolon: ', triple)
 	triple = triple.replace(' , ', '||||').replace(', ', '&&&&')
 	print('Triple after replacing: ', triple)
+
+	# Special case: to handle the multiple lines
+	if triple.count("'''")>0:
+		indexStart = triple.index("'''")+3
+		indexEnd = triple[indexStart:].index("'''")
+		triple =  triple[:indexStart]+triple[indexStart:indexEnd].replace(" ","|")+triple[indexEnd:]
+
 	# Do the split based on white spaces
 	nodes = triple.strip().split()
+
 
 	# change the characters back
 	for i in range(0, len(nodes)):
 		nodes[i]=nodes[i].replace('||||', ' , ').replace('&&&&', ', ')
+		if triple.count("'''")>0:
+			nodes[i]=nodes[i].replace('|', ' ')
+
+
 	#print(nodes)
 	print('Nodes list generated: ', nodes)
 	# validate the triple data
@@ -61,17 +82,16 @@ def splitByComma(triple):
 		if len(nodes)<3:
 			print('Invalid triple data: ', nodes)
 			sys.exit()
-		# special case for triple such as 'dbr:Edmonton dbp:leaderTitle "Governing body"@en'
+		# Special case:  for triple such as 'dbr:Edmonton dbp:leaderTitle "Governing body"@en'
 		# the resulting nodes list for this triple will be in length 4, 
 		# because space existed in the object as a literal string
-		# to fix this issue:
-		# check if this length(>3) is resulting by spliting the spaces in literal strings
-		# note that only literal strings can have spaces in themselves
+		# To fix this issue:
+		# 	check if this length(>3) is resulting by spliting the spaces in literal strings
+		# 	note that only literal strings can have spaces in themselves
 		for i in range(2, len(nodes)):
 			print('Looping inside the while loop')
 			# for all possible extra nodes:
 			if nodes[i].count('"')%2==1:
-				#print("triggered")
 				# if there is an odd number of " quotes in the node, 
 				# eg:  '"Manager"@en，"Governing' has 3 '"''s
 				# eg: 'body"@en，dbr:Legislative_Assembly_of_Alberta，dbr:List_of_House_members_of_the_42nd_Parliament_of_Canada，"Mayor"@en' also has 3
@@ -84,8 +104,6 @@ def splitByComma(triple):
 				print('Invalid triple data: did you forget any periods/commas/semicolons/triple node?', nodes)
 				sys.exit()
 
-	#print(nodes)
-	#print('nodes is: ', nodes)
 	# extract all three nodes of one triple data
 	subject = nodes[0]
 	predicate = nodes[1]
@@ -98,12 +116,6 @@ def splitByComma(triple):
 			temp = obj.split(', ')
 			objects.remove(obj)
 			objects+=temp
-
-
-	#for obj in objects:
-	#	if obj.count('"')%2==1:
-	#		objects = 
-	#print("Objects are: ", objects)
 
 	# to construct all complete triple statements, 
 	#  by correspond each obj in the objects list to the subject&predicates
@@ -165,6 +177,8 @@ def replacePrefix(prefixDict, statement, hasEmptyPrefix, hasBase, base):
 			# for string literals
 			outputStmt.append(node)
 			#outputStmt.append(node+'^^xsd:string')
+		elif node[:3]=="'''":
+			outputStmt.append(node)
 		elif node.isnumeric():
 			# for int
 			outputStmt.append(node)
@@ -272,12 +286,6 @@ def main(db, filename):
 			dataString+=' '
 	# now the original file is represented as a single string -- dataString
 
-	# replace the extra spaces remaining in the dataString
-	#dataString = dataString.replace(' ; ', ";")
-	#dataString = dataString.replace(' ,   ', "||||")
-	#dataString = dataString.replace(', ',' , ').replace('  , ',' , ')
-	#print('datastring is: ', dataString)
-
 	# deal with PREFIX
 	while True:
 		try:
@@ -343,11 +351,7 @@ def main(db, filename):
 			for triple in tripleList:
 				statements+=splitByComma(triple)
 
-	'''
-	for prefix,value in prefixList.items():
-		print(prefix)
-		print(value)
-	'''
+
 	print('-------------------Replacing prefixes---------------------')
 	print('Final statements List is: ', statements)
 	statementsNew = []
