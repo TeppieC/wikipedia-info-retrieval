@@ -10,6 +10,8 @@ Otherwise the commas/semicolons will be treated as the last character of the tri
 
 Please remove all comments(start with #) in the txt file before running. 
 
+blank node _:a will be stored as <a> in the database
+
 '''
 
 def isValidPrefix(string):
@@ -90,6 +92,14 @@ def splitByComma(triple):
 	print('Objects string before spliting by comma is: ', nodes[2])
 	objects = nodes[2].split(' , ') # a list of all objects (used to be separated by commas)
 
+	for obj in objects:
+		if obj.count('"')>2:
+			print('More than 1 objects inside of this node, may be caused by wrong delimator: ', obj)
+			temp = obj.split(', ')
+			objects.remove(obj)
+			objects+=temp
+
+
 	#for obj in objects:
 	#	if obj.count('"')%2==1:
 	#		objects = 
@@ -169,7 +179,10 @@ def replacePrefix(prefixDict, statement, hasEmptyPrefix, hasBase, base):
 			# "53.53333282470703125"^^xsd:float
 			# "812201"^^xsd:nonNegativeInteger
 			dataType = node[node.index(':')+1:]
-			if dataType=='float' or dataType=='nonNegativeInteger':
+			if dataType=='float' or dataType=='nonNegativeInteger' or dataType=='string' \
+				or dataType=='<http://www.w3.org/2001/XMLSchema#string>'\
+				or dataType=='<http://www.w3.org/2001/XMLSchema#float>'\
+				or dataType=='<http://www.w3.org/2001/XMLSchema#nonNegativeInteger>':
 				outputStmt.append(node[1:node.index('^^')-1])
 			else:
 				outputStmt.append(node)
@@ -193,7 +206,7 @@ def replacePrefix(prefixDict, statement, hasEmptyPrefix, hasBase, base):
 				sys.exit()
 			try:
 				if nodeList[0]=='_': # for empty prefix
-					prefix = '<_/>'
+					prefix = '<>'
 				else:
 					prefix = prefixDict[nodeList[0]]
 			except KeyError: 
@@ -203,6 +216,20 @@ def replacePrefix(prefixDict, statement, hasEmptyPrefix, hasBase, base):
 			outputStmt.append(prefix[:-1] + nodeList[1] + prefix[-1])
 	return outputStmt
 
+def printResult(conn):
+	'''
+	print the result without any filtering
+	'''
+	#conn.commit()
+	cur = conn.cursor()
+	print('#'*90)
+	cur.execute('SELECT * FROM statement;')
+	count = 0
+	print('|       %s      |'*4%('ID','subject', 'predicate', 'object'))
+	for row in cur:
+		print(row)
+		count+=1
+	print('%d rows'%count)
 
 def main(db, filename):
 
@@ -251,6 +278,7 @@ def main(db, filename):
 	#dataString = dataString.replace(', ',' , ').replace('  , ',' , ')
 	#print('datastring is: ', dataString)
 
+	# deal with PREFIX
 	while True:
 		try:
 			i = dataString.index('PREFIX')
@@ -265,14 +293,16 @@ def main(db, filename):
 		dataString = subStr1+subStr2
 		#print('datastring is: ', dataString)
 
+	# deal with BASE
 	while True:
 		try:
-			i = dataString.index('PREFIX')
+			i = dataString.index('BASE')
 			#print('index is:',i)
 		except ValueError:
 			break
 		subStr1 = dataString[:i]
 		subStr2 = dataString[i:]
+		subStr2 = subStr2.replace('BASE','@base')
 		j = subStr2.index('>')
 		subStr2 = subStr2[:j+1].strip()+' .'+subStr2[j+1:]
 		dataString = subStr1+subStr2
@@ -336,6 +366,9 @@ def main(db, filename):
 		conn.close()
 		sys.exit()
 
+	printResult(conn)
+
+	print('NOTE: Please check with sqlite3 <name_of_db>.db for exact results/schema')
 	print("Table updated successfully")
 	conn.commit()
 	conn.close()
