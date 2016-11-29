@@ -1,8 +1,22 @@
+For q0:
+	first we limit the type to be lake
+	then we select lakes whose location object are Jasper_National_Park 
+
 For q1:
-	https://en.wikipedia.org/wiki/List_of_football_clubs_in_Italy
-	seems not useful
-	Another approach: Category:Football_venues_in_Italy
-	Our approach: football clubs in italy --> stadiums used by the clubs --> the capacities of the stadiums
+	first limit the type to be SoccerClub
+	for Italian soccer club select subject to be Football_clubs_in_Italy
+	then select stadium whose type is Stadium
+	connect team and staduim with object ground, which means the team has the ground staduim
+	if available, use "OPTIONAL" to show the object capacity of the team
+
+For q2:
+	we assume the international airport is defined as those airpots with "International" in their names
+	limit the type to be airport
+	as we need the airport in Canada, select the city with Canada as object
+	also connect the airport and city as airport has an city object
+	finally we select the airport with "International" in their name using FILTER (regex(?v, "<text>"))
+
+For q3:
 
 For q6,7,8:
 	TODO: to distinguish float and decimal
