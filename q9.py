@@ -6,17 +6,37 @@ import sqlite3
 # 1. All lines should only consist of a statement or a filter
 #		eg. the closing brace } will not be in the same line as the last statement.
 # 2. All keywords in the provided query file should be in upper case. eg. SELECT or WHERE or FILTER
-# 3. All statements should end with a period, otherwise the program will report the error
-# 4. All numeric filters will only perform on variables which are of numeric types(int/float/decimal)
+# 3. All statements should end with a period, otherwise the program will report the error.
+# 4. All numeric filters will only perform on variables which are of numeric types(int/float/decimal with <=,>=,!=,=,<,> operators)
 #		If a filter is performed on a non-numeric typed varaible, error will be prompt
-# 4. All filter varaiables are within the querying variables. ??????????????????????????????????????TODO
 # 5. All literals given in the filter has to 
 #		eg. FILTER (?number = "10") . where 10 is of a numeric type (int)
 #			FILTER (regex(?v, "<text>")) where <text> is a string to be matched
 # 6. All variables should be named with only one question mark, followed by alphabetic characters/digits
 # 7. We assume that the database is in the same schema of q8.py, please see README.txt or q6.txt for details
+# 8. All literals would be within double quotes, no matter which data type it is. (This is the one from the requirements page)
+#		e.g  ?city dbo:populationTotal "1000000". ---- the object "1000000" will be considered as a numeric/int type by the program afterwards 
+
+'''
+test cases:
+run with cities.db
+
+1.
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX schema: <http://schema.org/>
+PREFIX dbr: <http://dbpedia.org/resource/>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX foaf:	<http://xmlns.com/foaf/0.1/>
+SELECT ?city WHERE {
+    ?city rdf:type schema:City .
+  	?city dbo:isPartOf dbr:Ontario .
+  	?city foaf:name "Toronto".
+} 
+
+2.
 
 
+'''
 global hasTwoVarStmt
 
 def main(db, filename):
@@ -35,6 +55,8 @@ def main(db, filename):
 	filters = []
 	global hasTwoVarStmt
 	hasTwoVarStmt = False
+	#hasEmptyPrefix = False
+	#emptyPrefix = ''
 
 	# possess the original file
 	with open(filename) as f:
@@ -57,6 +79,11 @@ def main(db, filename):
 					print('prefix is not valid.')
 					sys.exit()
 				temp = line.split(':', 1) # temp == ['PREFIX rdf', ' <http://www.w3.org/1999/02/22-rdf-syntax-ns#>']
+				if temp[0].strip()=='PREFIX' and len(temp)==2: # e.g line == PREFIX : <http://dbpedia.org/ontology/>
+					#hasEmptyPrefix = True
+					#emptyPrefix = temp[1].strip()
+					prefix[' '] = temp[1].strip()
+					continue
 				parts = temp[0].split() # parts == ['PREFIX', 'rdf']
 				parts.append(temp[1]) # parts == ['PREFIX', 'rdf', ' <http://www.w3.org/1999/02/22-rdf-syntax-ns#>']
 				prefix[parts[1].strip()] = parts[2].strip() #store the prefix
@@ -210,8 +237,10 @@ def replacePrefix(statements, prefixDict):
 					nodeList = node.split(":")
 					prefix = ''
 					try:
-						if nodeList[0]=='_': # for empty prefix
+						if nodeList[0]=='_': # for blank node
 							prefix = '<_/>'
+						elif len(nodeList)==2 and node[0]==':':
+							prefix = prefixDict[' ']
 						else:
 							prefix = prefixDict[nodeList[0]]
 					except KeyError: 
@@ -713,7 +742,6 @@ def filtering(conn, numFilters, regFilters, result, queryVars, resultCols):
 				filterResult.append(row)
 		result = filterResult
 
-
 	print('#'*30)
 	print('Result')
 	print('|   %s   |'*resultCols%tuple(queryVars)[:resultCols])
@@ -729,8 +757,13 @@ def isNumericFilter(filt):
 	'''
 	# extracted filters should be in the form of: ?number = "10"
 	# TODO
-
-	return True
+	if (">=" in filt) or \
+		("<=" in filt) or \
+		("=" in filt) or \
+		("!=" in filt) or \
+		(">" in filt) or \
+		("<" in filt):
+		return True
 
 def isRegexFilter(filt):
 	'''

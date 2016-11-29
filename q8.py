@@ -148,7 +148,7 @@ def replacePrefix(prefixDict, statement, hasEmptyPrefix, hasBase, base):
 				outputStmt.append(node)
 			else:
 				outputStmt.append('<'+base[1][1:-1]+node[1:-1]+'>')
-				print('after prefix with base:|', '<'+base[1][1:-1]+node[1:-1]+'>', '|')
+				#print('after prefix with base:|', '<'+base[1][1:-1]+node[1:-1]+'>', '|')
 		elif node=='a':
 			outputStmt.append('<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>')
 		elif node[0]=='"' and node[-1]=='"':
@@ -188,8 +188,8 @@ def replacePrefix(prefixDict, statement, hasEmptyPrefix, hasBase, base):
 					'''
 					outputStmt.append('')
 				#print('h|', node)
-				print('Invalid triple node:', nodeList)
-				print('Did you miss the colon between?')
+				print('Invalid prefix delcaration: ', nodeList)
+				print('Did you miss the colon?')
 				sys.exit()
 			try:
 				if nodeList[0]=='_': # for empty prefix
@@ -295,7 +295,7 @@ def main(db, filename):
 		data = data.strip()
 		if data[0:7]=='@prefix' or data[0:6]=='PREFIX': # store the prefix or base directives
 			if not isValidPrefix(data): # check for validity
-				print('Wrong format for prefix defination')
+				print('Wrong format for prefix defination: ', data)
 				sys.exit()
 			directives = data.split()
 			prefixList[directives[1][:-1]] = directives[2] # store the prefix information to the dictionary
