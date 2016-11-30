@@ -80,7 +80,8 @@ def splitByComma(triple):
 		if len(nodes)<3:
 			print('Invalid triple data: ', nodes)
 			sys.exit()
-		# Special case:  for triple such as 'dbr:Edmonton dbp:leaderTitle "Governing body"@en'
+		# Special case:  handles the cases when there is space inside the string
+		# for triple such as 'dbr:Edmonton dbp:leaderTitle "Governing body"@en'
 		# the resulting nodes list for this triple will be in length 4, 
 		# because space existed in the object as a literal string
 		# To fix this issue:
@@ -89,7 +90,7 @@ def splitByComma(triple):
 		for i in range(2, len(nodes)):
 			print('Looping inside the while loop')
 			# for all possible extra nodes:
-			if nodes[i].count('"')%2==1:
+			if nodes[i].count('"')%2==1 or nodes[i].count("'")%2==1:
 				# if there is an odd number of " quotes in the node, 
 				# eg:  '"Manager"@en，"Governing' has 3 '"''s
 				# eg: 'body"@en，dbr:Legislative_Assembly_of_Alberta，dbr:List_of_House_members_of_the_42nd_Parliament_of_Canada，"Mayor"@en' also has 3
@@ -123,7 +124,7 @@ def splitByComma(triple):
 			if obj[-3:]=='@en': # deal with the language tag with @en at the end	
 				statements.append([subject,predicate,obj[:-3]])
 				continue
-			elif obj[-3]=='@': # won't deal with languages other than English	
+			elif obj[-3]=='@' or obj[-6]=='@': # won't deal with languages other than English	
 				continue
 		except IndexError: # in case that some objects will have shorter length, eg: 11
 			# those cases are common cases, without language tags, leave it to the next line
@@ -190,12 +191,16 @@ def replacePrefix(prefixDict, statement, hasEmptyPrefix, hasBase, base):
 			# "1904-10-08"^^xsd:date
 			# "53.53333282470703125"^^xsd:float
 			# "812201"^^xsd:nonNegativeInteger
-			dataType = node[node.index(':')+1:]
-			if dataType=='float' or dataType=='nonNegativeInteger' or dataType=='string' \
-				or dataType=='<http://www.w3.org/2001/XMLSchema#string>'\
-				or dataType=='<http://www.w3.org/2001/XMLSchema#float>'\
-				or dataType=='<http://www.w3.org/2001/XMLSchema#nonNegativeInteger>':
-				outputStmt.append(node[1:node.index('^^')-1])
+			dataType = node[node.index(':')+1:].strip()
+			dataType2 = node[node.index('^^')+2:].strip()
+			if dataType=='float' or dataType=='nonNegativeInteger' or dataType=='string':
+				#print(node[:node.index('^^')])
+				outputStmt.append(node[:node.index('^^')])
+			elif dataType2=='<http://www.w3.org/2001/XMLSchema#string>'\
+				or dataType2=='<http://www.w3.org/2001/XMLSchema#float>'\
+				or dataType2=='<http://www.w3.org/2001/XMLSchema#nonNegativeInteger>':
+				#print(node[:node.index('^^')])
+				outputStmt.append(node[:node.index('^^')])
 			else:
 				outputStmt.append(node)
 		elif isBoolean(node):
