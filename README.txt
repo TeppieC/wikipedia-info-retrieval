@@ -17,6 +17,24 @@ For q2:
 	finally we select the airport with "International" in their name using FILTER (regex(?v, "<text>"))
 
 For q3:
+	the club should have the league property called La_Liga
+	"never been relegated" is an Unrelegated_association_football_clubs subject the club has
+	then select players.
+	player should have the club property which we select before. so we can connect players and clubs
+	we assume "South American soccer players" means players whose birthplace is a country in South American
+	which means these countries have Countries_in_South_America subject
+
+For q4:
+	basically the final has subject FIFA_World_Cup_finals
+	then connect team and final according to that each final has team property
+	count the number of country in result to check if the country(national soccer team) played more than 3 finals
+
+For q5:
+	the city has populationTotal object to let us know the population
+	for every city in Alberta is a part of Alberta
+	the hospital has an region object to be the city selected above
+	finally calculate the ratio of population and number of hosptial and sort
+
 
 For q6,7,8:
 	TODO: to distinguish float and decimal

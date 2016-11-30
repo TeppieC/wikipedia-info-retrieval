@@ -8,7 +8,7 @@ Error testing:
 8. q5: missing ")" in FILTER
 9. 是否考虑 ? city
 10. query之后多了一个 "." 可以检查出来但是报错不对是否影响？
-11. 
+11. 是否处理单引号？
 
 1. test_a2 error line 419 -> done!
 3. SELECT (empty) WHERE .. -> done!
