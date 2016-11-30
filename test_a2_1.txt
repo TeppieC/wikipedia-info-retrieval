@@ -4,6 +4,5 @@ PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX dbo: <http://dbpedia.org/ontology/>
 PREFIX foaf:	<http://xmlns.com/foaf/0.1/>
 SELECT ?city WHERE {
-    ?city rdf:type schema:City .
-  	?city foaf:name "Ottawa".
+  	?city foaf:name "Toronto"^^xsd:string.
 } 

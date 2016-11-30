@@ -190,7 +190,7 @@ def main(db, filename):
 
 	queryForRelations(conn, statements, queryVars, allVars)
 	if not hasTwoVarStmt:
-		print('No statements has more than 1 variable')
+		#print('No statements has more than 1 variable')
 		queryOnlyOneVar(conn, queryVars, allVars)
 
 	result = queryResultBeforeFilter(conn)
