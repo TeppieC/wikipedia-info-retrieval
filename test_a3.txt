@@ -3,7 +3,8 @@ PREFIX schema: <http://schema.org/>
 PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX dbo: <http://dbpedia.org/ontology/>
 SELECT * WHERE {
-    	?city rdf:type schema:City .
-  	?city 			<http://dbpedia.org/ontology/leaderTitle> ?title . 
+    	
+    ?city rdf:type schema:City .
+  	?city 	<http://dbpedia.org/ontology/leaderTitle> ?title . 
   	FILTER(?city="10") .
-  	  	} 
+} 

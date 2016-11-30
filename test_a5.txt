@@ -4,22 +4,8 @@ PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX dbo: <http://dbpedia.org/ontology/>
 PREFIX foaf:	<http://xmlns.com/foaf/0.1/>
 SELECT ?city ?population ?name WHERE {
-    ?city rdf:type schema:City .
   	?city dbo:populationTotal ?population. 
-
   	?city foaf:name ?name.
-
-  	FILTER (?population>="1000000") .
-
-  	FILTER ( ?population>="1000000" ) .
-
-  	FILTER (?population >= "1000000") .
-
-  	FILTER ( ?population >= "50000" ) .
-
-  	FILTER(?population >= "1000000") .
-
-  	FILTER (regex( ?name,"TorO") ) .
-  	FILTER ( regex( ?name,"t") ) .
-  	FILTER (regex( ?name,"r") ) .
+  	FILTER (?population!="1000000") .
+  	FILTER (regex( ?name,"ToronTo") ) .
 } 
