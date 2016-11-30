@@ -63,6 +63,8 @@ For q8:
 
 
 FOR q9:
+	Run with the command: python3 q9.py <name_of_db>.db <name_of_queryfile>.txt
+
 	Please check the header of our q9.py for details. 
 	1) We listed the explanation of the terms we used to name the variables.
 	2) We have also used a small example to illustrate how our program runs on queries.

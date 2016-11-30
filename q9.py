@@ -3,6 +3,8 @@ import sqlite3
 
 
 '''
+Run with the command: python3 q9.py <name_of_db>.db <name_of_queryfile>.txt
+
 The table we used to store RDF data is called 'statement'
 
 # Assume that 
