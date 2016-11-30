@@ -4,5 +4,5 @@ PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX dbo: <http://dbpedia.org/ontology/>
 SELECT ?city ?population  WHERE {
   	?city dbo:populationTotal ?population. 
-  	FILTER (?population>="1000000"^^xsd:integer) .
+  	FILTER (?population>="1000000") .
 } 

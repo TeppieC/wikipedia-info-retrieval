@@ -1,18 +1,22 @@
 Schema:
 statement(id, subject, predicate, object)
-our table named statement, and has four columns, namely id, subject, predicate, object
-We will use the most intuitive approach to store the RDF data into relational database. There will be only one table in the database, the table will be of exactly 3 columns. The columns will be named as "subject", "predicate" and "object" respectively. All data will be stored as complete uri's, enclosing by <>. 
+our table is named statement, and has four columns, namely: id, subject, predicate, object
+We will use the most intuitive approach to store the RDF data into relational database. There will be only one table in the database, the table will be of exactly 3 columns. The columns will be named as "subject", "predicate" and "object" respectively. All data will be stored as complete/absolute uri's, enclosing by <>. 
 
 
-SQLite statement:
+SQLite command:
 CREATE TABLE statement( id INT PRIMARY KEY, subject TEXT, predicate TEXT, object TEXT);
 
 Explanation:
 our strategy is to store each tuple of predicate, subject and object in one row. 
 If the objects are string, they are stored in "" 
-And we remove all the ^^ part and @ part at the end of the object
+And we remove all the ^^ part and @ part at the end of the object.
+The schema works well for relatively small databases, such as the one created from Edmonton.txt. It is simple but effective. because it only has one table inside, when querying a sparql file, one don't need to cartesian product too many tables and therefore saves time.
 
 Example: (from Edmonton.txt)
+
+In Edmonton.txt:
+-------------------------------------------------------------------------------------------------------------------
 dbr:Edmonton	rdf:type	yago:WikicatTownsInAlberta ,
 		yago:Town108665504 ,
 		yago:GeographicalArea108574314 .
@@ -25,12 +29,15 @@ dbr:Edmonton	foaf:name	"City of Edmonton"@en ,
 	geo:lat	"53.53333282470703125"^^xsd:float ;
 	geo:long	"-113.5"^^xsd:float ;
 	foaf:depiction	<http://commons.wikimedia.org/wiki/Special:FilePath/Edmontonmontage1.jpg> .
+-------------------------------------------------------------------------------------------------------------------
 
-|       ID      ||       subject      ||       predicate      ||       object      |
+In database, statement table:
+-------------------------------------------------------------------------------------------------------------------
+| ID ||           subject              ||                    predicate                    ||               object        |
 0|<http://dbpedia.org/resource/Edmonton>|<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>|<http://dbpedia.org/class/yago/WikicatTownsInAlberta>
 1|<http://dbpedia.org/resource/Edmonton>|<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>|<http://dbpedia.org/class/yago/Town108665504>
 2|<http://dbpedia.org/resource/Edmonton>|<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>|<http://dbpedia.org/class/yago/GeographicalArea108574314>
-
+...
 128|<http://dbpedia.org/resource/Edmonton>|<http://xmlns.com/foaf/0.1/name>|"City of Edmonton"
 129|<http://dbpedia.org/resource/Edmonton>|<http://xmlns.com/foaf/0.1/name>|"Edmonton"
 130|<http://dbpedia.org/resource/Edmonton>|<http://xmlns.com/foaf/0.1/nick>|"Canada's Festival City, City of Champions, The Oil Capital of Canada (more...)"

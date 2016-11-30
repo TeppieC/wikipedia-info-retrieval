@@ -6,9 +6,7 @@ import sqlite3
 The table we used to store RDF data is called 'statement'
 
 # Assume that 
-# 0. All assumptions listed in the assignment3 requirement.
-# 1. All lines should only consist of a statement or a filter
-#		eg. the closing brace } will not be in the same line as the last statement.
+# 1. The closing brace } will not be in the same line as the last statement.
 # 2. All keywords in the provided query file should be in upper case. eg. SELECT or WHERE or FILTER
 # 3. All statements should end with a period, otherwise the program will report the error.
 # 4. All numeric filters will only perform on variables which are of numeric types(int/float/decimal with <=,>=,!=,=,<,> operators)
@@ -719,8 +717,10 @@ def printResultWithoutFilter(conn, queryVars):
 	count = 0
 	print('|     %s     |'*len(queryVars)%tuple(queryVars))
 	for row in cur:
-		print(row)
+		res = tuple(row)
+		print('| %s |'*len(res)%res)
 		count+=1
+
 	print('%d results'%count)
 
 def filtering(conn, numFilters, regFilters, result, queryVars, resultCols):
@@ -794,7 +794,8 @@ def filtering(conn, numFilters, regFilters, result, queryVars, resultCols):
 	print('|   %s   |'*resultCols%tuple(queryVars)[:resultCols])
 	count = 0
 	for row in result:
-		print(row[:resultCols])
+		res = tuple(row[:resultCols])
+		print('| %s |'*resultCols%res)
 		count+=1
 	print(count, ' results')
 
