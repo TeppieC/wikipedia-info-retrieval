@@ -13,7 +13,7 @@ The table we used to store RDF data is called 'statement'
 # 3. All statements should end with a period, otherwise the program will report the error.
 # 4. All numeric filters will only perform on variables which are of numeric types(int/float/decimal with <=,>=,!=,=,<,> operators)
 #		If a filter is performed on a non-numeric typed varaible, error will be prompt
-# 5. All literals given in the filter has to 
+# 5. All literals given in the filter has to be surrounded with double quotes
 #		eg. FILTER (?number = "10") . where 10 is of a numeric type (int)
 #			FILTER (regex(?v, "<text>")) where <text> is a string to be matched
 # 6. All variables should be named with only one question mark, followed by alphabetic characters/digits

@@ -7,19 +7,17 @@ Run with the command: python3 q8.py <name_of_db>.db <name_of_rdf>.txt
 1. Assume that the input file is in the same format as the examples 
 from https://www.w3.org/TR/turtle/ up to section 2.6 or Edmonton.txt
 
-2. Please remove all comments(start with #) in the txt file before running. 
+2. blank node _:a will be stored as <a> in the database
 
-3. blank node _:a will be stored as <a> in the database
+3. The relational database schema is described in q6.txt
 
-4. The relational database schema is described in q6.txt
-
-5. We dealt with the datatypes of integer/string/float/decimal. 
+4. We dealt with the datatypes of integer/string/float/decimal. 
 	The strings would be stored with double quotes.
 	The int/float/decimal would be stored without double quotes.
 	The other types would be stored in a lexical form. e.g "1904-10-08"^^xsd:date
 	The data in other languages other than English would be ignored.
 
-6. We handled all errors that we could thought of. The update would not be commited 
+5. We handled all errors that we could thought of. The update would not be commited 
 	if an error occurs. The program would shut down and give appropriate prompt on error.
 '''
 
@@ -272,8 +270,25 @@ def main(db, filename):
 	with open(filename) as f:
 		for line in f:
 			line = line.replace('\t',' ').replace('\n', ' ').replace('\s',' ').strip()
-			print("new line is: ",line)
+			#print("new line is: ",line)
 			try:
+				# Special case: to handle the comments started with hashtags
+				insideStr = False
+				insideIri = False
+				indexHashtag = 0
+				for char in line:
+					if char == '"':
+						insideStr = not insideStr
+					if char == '<':
+						insideIri = True
+					if char == '>':
+						insideIri = False
+					if char == '#' and not insideStr and not insideIri:
+						print(insideStr)
+						line = line[:indexHashtag].strip()
+						print('The line is:', line, "|")
+					indexHashtag+=1
+
 				if line[-1]=='.' and line[-2]!=' ':
 					line = line[:-1]+' . '
 				elif line[-1]==',' and line[-2]!=' ':
