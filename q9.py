@@ -264,7 +264,12 @@ def replacePrefix(statements, prefixDict):
 				# "1904-10-08"^^xsd:date
 				# "53.53333282470703125"^^xsd:float
 				# "812201"^^xsd:nonNegativeInteger
-				outputStmt.append(node[:node.index('^^')])
+				node = node[:node.index('^^')]
+				if isNumeric(node[1:-1]): # if is of numeric types that we need to handle
+					node = node[1:-1]
+					outputStmt.append(node)
+				else: # if is of string type or any other types
+					outputStmt.append(node)
 			elif isLiteral(node):
 				outputStmt.append(node)
 			elif isNumeric(node):
@@ -334,14 +339,19 @@ def extractFilters(filters):
 			if not filt[0]=='?':
 				print('Wrong format of filter: ', filt)
 				sys.exit()
+			print(filt)
 			index = 1
 			for char in filt[1:]:
 				if char.isalpha():
 					index+=1
 			filterVar = filt[:index].strip()
+			print(filterVar)
 			indexLiteral = filt.index('"')
+			print(indexLiteral)
 			literal = filt[indexLiteral+1:-1].strip()
+			print(literal)
 			operator = filt[index:indexLiteral].strip()
+			print(operator)
 			if not operator in ['<=','>=','=','!=','>','<']:
 				print('Invalid operator for numeric filters: ', operator)
 				sys.exit()
@@ -364,6 +374,16 @@ def isNumeric(string):
 		return True
 	elif isfloat(string):
 		return True
+	elif string.count('^^')>0:
+		i = string.index('^^')
+		dataType = string[i+2:].strip()
+		if dataType =='<http://www.w3.org/2001/XMLSchema#string>'\
+			or dataType=='<http://www.w3.org/2001/XMLSchema#float>'\
+			or dataType=='<http://www.w3.org/2001/XMLSchema#nonNegativeInteger>'\
+			or dataType=='xsd:integer' or dataType=='xsd:float' or dataType=='xsd:nonNegativeInteger':
+			return True
+		else:
+			return False
 	else:
 		return False
 
@@ -693,7 +713,7 @@ def printResultWithoutFilter(conn, queryVars):
 	'''
 	#conn.commit()
 	cur = conn.cursor()
-	print('#'*30)
+	print('#'*90)
 	print('Result')
 	cur.execute('SELECT * FROM result;')
 	count = 0
@@ -769,7 +789,7 @@ def filtering(conn, numFilters, regFilters, result, queryVars, resultCols):
 				filterResult.append(row)
 		result = filterResult
 
-	print('#'*30)
+	print('#'*90)
 	print('Result')
 	print('|   %s   |'*resultCols%tuple(queryVars)[:resultCols])
 	count = 0

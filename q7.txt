@@ -1,1 +1,20 @@
-Index will be created on all combinations of two columns. 
+Since we have only one table with 4 columns: ID, subject, predicate, object.
+
+CREATE INDEX index_subject ON statement (subject)
+CREATE INDEX index_predicate ON statement (predicate)
+CREATE INDEX index_object ON statement (object)
+CREATE INDEX index_subject_prediacte ON statement (subject, predicate)
+CREATE INDEX index_subject_object ON statement (subject, object)
+CREATE INDEX index_predicate_object ON statement (predicate, object)
+
+Reasons:
+This will create index on the following columns: | After creating the indexes, the following queries would run faster 
+1) subject                                       | ?city dbo:populationTotal "812231". 
+2) predicate                                     | dbr:Edmonton ?relation "812231". 
+3) object                                        | dbr:Edmonton dbo:populationTotal ?population. 
+4) subject, predicate                            | ?city ?relation "812231". 
+5) subject, object                               | ?city dbo:populationTotal ?population. 
+6) predicate, object                             | dbr:Edmonton ?realtion ?population. 
+As the index will save I/O cost and faster the querying speed, it is needed for rdf database.
+In the short run, when the database is not very large, for example, in Edmonton.txt, the index would not take great effect.
+However, when the database is growing larger, the 6 indexes are extremely helpful to faster the query speed.
