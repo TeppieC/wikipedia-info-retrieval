@@ -3,11 +3,7 @@ PREFIX schema: <http://schema.org/>
 PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX dbo: <http://dbpedia.org/ontology/>
 PREFIX foaf:	<http://xmlns.com/foaf/0.1/>
-PREFIX dbp: <http://dbpedia.org/property/>
-
-SELECT ?city ?population ?name WHERE {
-  	?city dbp:populationTotal ?population. 
+SELECT ?name WHERE {
+  	?city dbo:isPartOf dbr:Ontario .
   	?city foaf:name ?name.
-  	FILTER (?population!="1000000") .
-  	FILTER (regex( ?name,"ToronTo") ) .
 } 
