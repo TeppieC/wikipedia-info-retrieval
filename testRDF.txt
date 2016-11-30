@@ -1,0 +1,55 @@
+@prefix rdf:	<http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix dbr: <http://dbpedia.org/resource/> .  
+@prefix yago:	<http://dbpedia.org/class/yago/>.
+@prefix dct: <http://purl.org/dc/terms/>.
+
+@prefix dbo:	<http://dbpedia.org/ontology/> .
+dbr:Edmonton	rdf:type	dbo:City , dbo:PopulatedPlace .
+@prefix schema:	<http://schema.org/> .
+dbr:Edmonton	rdf:type	schema:City ,
+		schema:Place .
+@prefix owl:	<http://www.w3.org/2002/07/owl#> .
+dbr:Edmonton	rdf:type	owl:Thing ,
+		dbo:Place .
+@prefix dbc: <http://dbpedia.org/resource/Category:>.
+dbr:Edmonton	dct:subject dbc:Cities_in_Alberta .
+@prefix dbp: <http://dbpedia.org/property/>.
+
+dbr:Edmonton dbp:populationDensityKm	1186.7999999999999545 ;
+	dbp:populationDensityMetroKm	123 ;
+	dbp:populationMetro	1159869 ;
+	dbp:populationTotal	812201 ;
+	dbp:populationUrban	960015 ;
+	dbp:postalCode	dbr:List_of_T_postal_codes_of_Canada .
+
+
+
+@prefix foaf: <http://xmlns.com/foaf/0.1/>.
+@prefix schema:	<http://schema.org/> .
+dbr:Vancouver	rdf:type	schema:City .
+dbr:Vancouver	foaf:name	"Vancouver"@en .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>.
+
+dbr:Vancouver foaf:homepage	<http://vancouver.ca/> ;
+	geo:lat	"49.25"^^xsd:float ;
+	geo:long	"-123.09999847412109375"^^xsd:float ;
+	foaf:depiction	<http://commons.wikimedia.org/wiki/Special:FilePath/Vancouver_photo_montage.jpg> .
+
+dbr:Vancouver 	dbp:areaTotalKm	114.96999999999999886 ;
+	dbp:elevationFt	0 ;
+	dbp:populationDensityKm	5249 ;
+	dbp:populationTotal	603502.
+
+
+dbr:Toronto	foaf:name	"City of Toronto"@en .
+dbr:Toronto dbp:populationTotal	2615060 ;
+	dbp:postalCode	dbr:List_of_M_postal_codes_of_Canada.
+
+dbr:Calgary	foaf:name	"Calgary"@en .
+dbr:Calgary dbp:populationDensityKm	1329 ;
+	dbp:populationTotal	1096833 ;
+	dbp:postalCode	dbr:List_of_T_postal_codes_of_Canada.
+
+dbr:Ottawa dbp:populationDensityKm	316.60000000000002274 ;
+	dbp:populationTotal	883391.
+dbr:Ottawa foaf:name	"City of Ottawa"@en.

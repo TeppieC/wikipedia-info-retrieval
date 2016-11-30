@@ -1,5 +1,5 @@
 Zhaorui Chen 1428317
-Jinzhu Li
+Jinzhu Li 1461696
 
 For q0:
 	first we limit the type to be lake
@@ -48,7 +48,7 @@ For q8:
 		1. Assume that the input file is in the same format as the examples 
 			from https://www.w3.org/TR/turtle/ up to section 2.6 or Edmonton.txt
 
-		2. blank node _:a will be stored as <a> in the database
+		2. blank node _:xxx will be stored as <xxx> in the database
 
 		3. The relational database schema is described in q6.txt
 

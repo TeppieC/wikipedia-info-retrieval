@@ -20,7 +20,7 @@ In Edmonton.txt:
 dbr:Edmonton	rdf:type	yago:WikicatTownsInAlberta ,
 		yago:Town108665504 ,
 		yago:GeographicalArea108574314 .
-
+...
 dbr:Edmonton	foaf:name	"City of Edmonton"@en ,
 		"Edmonton"@en ;
 	foaf:nick	"Canada's Festival City, City of Champions, The Oil Capital of Canada (more...)"@en ;
