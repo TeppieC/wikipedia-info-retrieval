@@ -239,6 +239,12 @@ def extractStatements(queryLines):
 			print('Filter is: ', content)
 		else:
 			triple = line.split()
+			for i in range(0, len(triple)):
+				node = triple[i]
+				if isLiteral(node) and isNumeric(node[1:-1]):
+					triple[i] = node[1:-1]
+					print('Number:', triple)
+			print(triple)
 			output[0].append(triple)
 		
 	return output
@@ -261,6 +267,8 @@ def replacePrefix(statements, prefixDict):
 				outputStmt.append(node[:node.index('^^')])
 			elif isLiteral(node):
 				outputStmt.append(node)
+			elif isNumeric(node):
+				outputStmt.append(node)
 			else:
 				# for prefixed nodes
 				if node[0]!='<': # if the node is not a prefixed node, nor a literal
@@ -275,8 +283,8 @@ def replacePrefix(statements, prefixDict):
 						else:
 							prefix = prefixDict[nodeList[0]]
 					except KeyError: 
-						print('Undocumented prefix defination: ', nodeList[0])
-						print('Did you miss the @ identifier for prefix defination?')
+						print('Error on: ', nodeList[0])
+						print('Did you miss the @ identifier / or double quotes of the literals?')
 						sys.exit()
 					print(prefix)
 					print(nodeList)
@@ -606,7 +614,7 @@ def isLexical(string):
 	'''
 	determine if the type of the literal is like "1904-10-08"^^xsd:date
 	'''
-	if "^^xsd" in string:
+	if "^^" in string:
 		return True
 	else:
 		return False

@@ -4,6 +4,5 @@ PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX : <http://dbpedia.org/ontology/>
 SELECT ?city  WHERE {
     ?city rdf:type schema:City .
-  	?city :populationTotal ?population. 
-  	FILTER (?population>="1000000") .
+  	?city :populationTotal "812201"^^xsd:integer . 
 } 
